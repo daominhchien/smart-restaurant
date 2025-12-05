@@ -43,5 +43,5 @@ public class Tenant {
     @OneToMany(mappedBy = "tenant" ,cascade = CascadeType.REMOVE, orphanRemoval = true)
     List<RestaurantTable> table;
     @OneToMany(mappedBy = "tenant",cascade = CascadeType.REMOVE, orphanRemoval = true)
-    List<RestaurantTable> account;
+    List<Account> account;
 }
