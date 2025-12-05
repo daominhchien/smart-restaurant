@@ -50,6 +50,7 @@ public class ApplicationInitConfig {
                 Account account= Account.builder()
                         .username("admin")
                         .password(passwordEncoder.encode("admin"))
+                        .is_email_verify(true)
                         .roles(roles)
                         .build();
                 accountRepository.save(account);

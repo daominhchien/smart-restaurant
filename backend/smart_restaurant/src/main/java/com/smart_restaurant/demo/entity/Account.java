@@ -23,6 +23,7 @@ public class Account {
     Integer accountId;
     String username;
     String password;
+    boolean is_first_activity;
     boolean is_email_verify;
     @CreationTimestamp
     @Column(name = "create_at", updatable = false)
