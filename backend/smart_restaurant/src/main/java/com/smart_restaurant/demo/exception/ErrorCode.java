@@ -21,7 +21,9 @@ public enum ErrorCode {
     JWT_ERROR("1008","Failed to generate email token",HttpStatus.BAD_REQUEST),
     INVALID_KEY("1009", "Uncategorized error", HttpStatus.BAD_REQUEST),
     NOT_ENOUGHT_CHARACTER_PASSWORD("1010","Your password is less than {min} characters. Your password must be longer than {min} characters.", HttpStatus.BAD_REQUEST),
-    NOT_EMAIL("1011","wrong type email", HttpStatus.BAD_REQUEST)
+    NOT_EMAIL("1011","wrong type email", HttpStatus.BAD_REQUEST),
+    CATEGORY_NOT_FOUND("1018", "Category not found", HttpStatus.BAD_REQUEST),
+    ITEM_ALREADY_EXISTS("1019", "Item already exists", HttpStatus.BAD_REQUEST),
     ;
     ErrorCode(String code, String message, HttpStatus httpStatusCode) {
         this.code = code;
