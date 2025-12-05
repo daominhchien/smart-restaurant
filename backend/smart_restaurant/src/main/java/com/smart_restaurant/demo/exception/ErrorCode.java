@@ -11,7 +11,12 @@ import org.springframework.http.HttpStatusCode;
 public enum ErrorCode {
     UNAUTHENTICATED ("1001","UNAUTHENTICATED", HttpStatus.UNAUTHORIZED),
     UNAUTHORIZED("1002", "You do not have permission", HttpStatus.FORBIDDEN),
-    ACCOUNT_NOT_EXITS("1003","user not exist", HttpStatus.BAD_REQUEST);
+    ACCOUNT_NOT_EXITS("1003","account not exist", HttpStatus.BAD_REQUEST),
+    ACCOUNT_EXISTED("1004","email existed", HttpStatus.BAD_REQUEST),
+    OUT_OF_TIME("1005","Timed out to confirm email", HttpStatus.BAD_REQUEST),
+    WRONG_TYPE("1006","wrong type", HttpStatus.BAD_REQUEST),
+    WRONG_TOKEN("1007","Invalid token cannot be authenticated", HttpStatus.BAD_REQUEST)
+    ;
     ErrorCode(String code, String message, HttpStatus httpStatusCode) {
         this.code = code;
         this.message = message;

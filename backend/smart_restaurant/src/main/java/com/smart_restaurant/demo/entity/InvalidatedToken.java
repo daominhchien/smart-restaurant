@@ -19,7 +19,7 @@ public class InvalidatedToken {
     @Column(name = "id")
     private String id;
 
-    @Column(name = "token", nullable = false, unique = true, length = 500)
+    @Column(name = "token", nullable = false,length = 1000)
     private String token;
 
     @Column(name = "expire_time", nullable = false)
