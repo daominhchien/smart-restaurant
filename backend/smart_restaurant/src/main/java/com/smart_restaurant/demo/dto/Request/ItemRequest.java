@@ -19,6 +19,6 @@ public class ItemRequest {
     Double price;
     String imageUrl;
     boolean status;
-    List<Category> categories;
+    List<Integer> categoryIds;
     ModifierGroup modifierGroup;
 }

@@ -4,6 +4,7 @@ import com.smart_restaurant.demo.Service.AccountService;
 import com.smart_restaurant.demo.Service.CategoryService;
 import com.smart_restaurant.demo.dto.Request.CategoryRequest;
 import com.smart_restaurant.demo.dto.Response.ApiResponse;
+import com.smart_restaurant.demo.dto.Response.CategoryResponse;
 import com.smart_restaurant.demo.entity.Account;
 import com.smart_restaurant.demo.entity.Category;
 import jakarta.validation.Valid;
@@ -11,10 +12,9 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/categories")
@@ -38,6 +38,19 @@ public class CategoryController {
                         .message("Category created successfully")
                         .result(category)
                         .build();
+    }
+
+    @GetMapping("")
+    public ApiResponse<List<CategoryResponse>> getAllCategories(JwtAuthenticationToken jwtToken){
+        String username = jwtToken.getName();
+        Integer tenantId = accountService.getTenantIdByUsername(username);
+        List<CategoryResponse> categories = categoryService.getAllCategories(tenantId);
+
+        return ApiResponse.<List<CategoryResponse>>builder()
+                .message("Categories retrieved successfully")
+                .result(categories)
+                .build();
+
     }
 
 
