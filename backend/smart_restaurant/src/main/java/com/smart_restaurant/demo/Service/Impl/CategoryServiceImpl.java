@@ -5,6 +5,7 @@ import com.smart_restaurant.demo.Repository.CategoryRepository;
 import com.smart_restaurant.demo.Repository.TenantRepository;
 import com.smart_restaurant.demo.Service.CategoryService;
 import com.smart_restaurant.demo.dto.Request.CategoryRequest;
+import com.smart_restaurant.demo.dto.Response.CategoryResponse;
 import com.smart_restaurant.demo.entity.Category;
 import com.smart_restaurant.demo.entity.Tenant;
 import com.smart_restaurant.demo.exception.AppException;
@@ -15,6 +16,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Slf4j
 @Service
@@ -41,6 +44,20 @@ public class CategoryServiceImpl implements CategoryService {
         Category category = categoryMapper.toCategory(request);
         category.setTenant(tenant);
         return categoryRepository.save(category);
+
+    }
+
+    @Override
+    public List<CategoryResponse> getAllCategories(Integer tenant_id) {
+        // Kiem tra có tenant-id ko
+        Tenant tenant = tenantRepository.findById(tenant_id)
+                .orElseThrow(() -> new AppException(ErrorCode.TENANT_NOT_FOUND));
+
+        var categories = categoryRepository.findAllByTenant_TenantId(tenant_id);
+        return categories
+                .stream()
+                .map(categoryMapper::toCategoryResponse) // map sang DTO
+                .toList();
 
     }
 }
