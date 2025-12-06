@@ -20,5 +20,5 @@ public class ItemResponse {
     String imageUrl;
     boolean status;
     List<Category> categories;
-    ModifierGroup modifierGroup;
+    List<ModifierGroup> modifierGroup;
 }

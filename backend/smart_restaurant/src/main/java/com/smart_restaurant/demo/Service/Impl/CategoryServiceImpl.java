@@ -30,7 +30,7 @@ public class CategoryServiceImpl implements CategoryService {
     TenantRepository tenantRepository;
 
     @Override
-    public Category createCategory(CategoryRequest request, Integer tenant_id) {
+    public CategoryResponse createCategory(CategoryRequest request, Integer tenant_id) {
 
         Tenant tenant = tenantRepository.findById(tenant_id)
                 .orElseThrow(() -> new AppException(ErrorCode.TENANT_NOT_FOUND));
@@ -43,7 +43,14 @@ public class CategoryServiceImpl implements CategoryService {
 
         Category category = categoryMapper.toCategory(request);
         category.setTenant(tenant);
-        return categoryRepository.save(category);
+        Category savedCategory = categoryRepository.save(category);
+
+
+        CategoryResponse response = categoryMapper.toCategoryResponse(savedCategory);
+        response.setCategoryName(savedCategory.getCategoryName());
+        response.setTenantId(savedCategory.getTenant().getTenantId());
+
+        return response;
 
     }
 

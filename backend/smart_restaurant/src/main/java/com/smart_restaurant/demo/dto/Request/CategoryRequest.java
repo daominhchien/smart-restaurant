@@ -1,6 +1,7 @@
 package com.smart_restaurant.demo.dto.Request;
 
 import com.smart_restaurant.demo.entity.Tenant;
+import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -11,6 +12,6 @@ import lombok.experimental.FieldDefaults;
 @Builder
 public class CategoryRequest {
 
+    @NotBlank(message = "Tên danh mục không được để trống")
     String categoryName;
-    Tenant tenant;
 }

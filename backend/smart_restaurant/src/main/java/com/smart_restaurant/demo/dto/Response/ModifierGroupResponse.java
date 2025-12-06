@@ -1,7 +1,5 @@
 package com.smart_restaurant.demo.dto.Response;
 
-
-import com.smart_restaurant.demo.entity.Tenant;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -10,7 +8,8 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Builder
-public class CategoryResponse {
-    String categoryName;
-    Integer tenantId;
+public class ModifierGroupResponse {
+
+    Integer modifierGroupId;
+    String name;
 }
