@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/categories")
+@RequestMapping("/api/menu/categories")
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class CategoryController {
@@ -26,15 +26,15 @@ public class CategoryController {
     AccountService accountService;
 
     @PostMapping("")
-    public ApiResponse<Category> createCategory(
-            @RequestBody CategoryRequest request,
+    public ApiResponse<CategoryResponse> createCategory(
+            @Valid @RequestBody CategoryRequest request,
             JwtAuthenticationToken jwtToken) {
 
         String username = jwtToken.getName();
         Integer tenantId = accountService.getTenantIdByUsername(username);
-        Category category = categoryService.createCategory(request, tenantId);
+        CategoryResponse category = categoryService.createCategory(request, tenantId);
 
-        return ApiResponse.<Category>builder()
+        return ApiResponse.<CategoryResponse>builder()
                         .message("Category created successfully")
                         .result(category)
                         .build();

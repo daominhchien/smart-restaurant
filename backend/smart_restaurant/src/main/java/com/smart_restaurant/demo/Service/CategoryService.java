@@ -7,6 +7,6 @@ import com.smart_restaurant.demo.entity.Category;
 import java.util.List;
 
 public interface CategoryService {
-    public Category createCategory(CategoryRequest request, Integer tenant_id);
+    public CategoryResponse createCategory(CategoryRequest request, Integer tenant_id);
     public List<CategoryResponse> getAllCategories(Integer tenant_id);
 }
