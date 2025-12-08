@@ -44,8 +44,8 @@ public class ModifierGroupServiceImpl implements ModifierGroupService {
                 .orElseThrow(() -> new AppException(ErrorCode.TENANT_NOT_FOUND));
 
         // Kiêm tra tên này đã có chưa vs tenant này
-        boolean is_have_tenant = modifierGroupRepository.existsByNameAndTenantTenantId(request.getName(), tenantId);
-        if(is_have_tenant){
+        boolean existsModifierGroup = modifierGroupRepository.existsByNameAndTenantTenantId(request.getName(), tenantId);
+        if(existsModifierGroup){
             throw new AppException(ErrorCode.MODIFIER_GROUP_NOT_FOUND);
         }
 
