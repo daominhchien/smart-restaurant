@@ -7,6 +7,7 @@ import com.smart_restaurant.demo.Repository.ModifierGroupRepository;
 import com.smart_restaurant.demo.Service.CategoryService;
 import com.smart_restaurant.demo.Service.ItemService;
 import com.smart_restaurant.demo.dto.Request.ItemRequest;
+import com.smart_restaurant.demo.dto.Request.UpdateItemRequest;
 import com.smart_restaurant.demo.dto.Response.ItemResponse;
 import com.smart_restaurant.demo.entity.Category;
 import com.smart_restaurant.demo.entity.Item;
@@ -67,4 +68,58 @@ public class ItemServiceImpl implements ItemService {
 
         return itemResponse;
     }
+
+
+    @Override
+    public ItemResponse updateItemById(Integer id, UpdateItemRequest updateItemRequest) {
+
+        // 1. Lấy item cần update
+        Item item = itemRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.ITEM_NOT_FOUND));
+
+        // 2. Validate category
+        List<Category> categories = categoryRepository.findAllById(updateItemRequest.getCategoryIds());
+        if (categories.size() != updateItemRequest.getCategoryIds().size()) {
+            throw new AppException(ErrorCode.CATEGORY_NOT_FOUND);
+        }
+
+        // 3. Kiểm tra trùng tên item trong các category (bỏ qua chính item này)
+        boolean existsItem = itemRepository.existsByItemNameAndCategoryInAndItemIdNot(
+                updateItemRequest.getItemName(),
+                categories,
+                id
+        );
+        if (existsItem) {
+            throw new AppException(ErrorCode.ITEM_ALREADY_EXISTS);
+        }
+
+        // 4. Validate modifierGroups nếu có
+        List<ModifierGroup> modifierGroups;
+        if (updateItemRequest.getModifierGroupIds() != null) {
+            modifierGroups = modifierGroupRepository.findAllById(updateItemRequest.getModifierGroupIds());
+            if (modifierGroups.size() != updateItemRequest.getModifierGroupIds().size()) {
+                throw new AppException(ErrorCode.MODIFIER_GROUP_NOT_FOUND);
+            }
+            item.setModifierGroups(modifierGroups);
+        } else {
+            modifierGroups = item.getModifierGroups();
+        }
+
+        // 5. Map các trường đơn từ DTO sang entity
+        itemMapper.updateItem(item, updateItemRequest);
+
+        // 6. Update category
+        item.setCategory(categories);
+
+        // 7. Lưu DB
+        Item updatedItem = itemRepository.save(item);
+
+        // 8. Build response
+        ItemResponse response = itemMapper.toItemResponse(updatedItem);
+        response.setCategories(categories);
+        response.setModifierGroup(modifierGroups);
+
+        return response;
+    }
+
 }
