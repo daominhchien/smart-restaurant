@@ -70,6 +70,7 @@ public class ModifierGroupServiceImpl implements ModifierGroupService {
     public List<ModifierGroupResponse> getAllModifierGroup(JwtAuthenticationToken jwtAuthenticationToken) {
         String username = jwtAuthenticationToken.getName();
         Integer tenantId = accountService.getTenantIdByUsername(username);
+
         Tenant tenant = tenantRepository.findById(tenantId)
                 .orElseThrow(() -> new AppException(ErrorCode.TENANT_NOT_FOUND));
 
