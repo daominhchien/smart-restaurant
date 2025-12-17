@@ -1,6 +1,7 @@
 import { useState } from "react";
 import InputField from "../common/InputField";
 import { X } from "lucide-react";
+import toast from "react-hot-toast";
 
 function AddAccountCard({ onClose }) {
   const [email, setEmail] = useState("");
@@ -27,6 +28,7 @@ function AddAccountCard({ onClose }) {
 
     if (Object.keys(newErrors).length > 0) return;
 
+    toast.success("Thêm tài khoản admin thành công");
     // TODO: call API tạo account
     console.log({ email, password });
 
