@@ -1,5 +1,6 @@
 import { useState } from "react";
 import InputField from "../common/InputField";
+import Overlay from "../common/Overlay";
 import { X } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -36,12 +37,9 @@ function AddAccountCard({ onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* overlay */}
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-
+    <Overlay onClose={onClose}>
       {/* popup */}
-      <div className="relative bg-white rounded-xl p-6 w-[430px] shadow-lg">
+      <div className="bg-white rounded-xl p-6 w-[430px] shadow-lg">
         {/* header */}
         <div className="flex justify-between items-start mb-4">
           <div>
@@ -98,7 +96,7 @@ function AddAccountCard({ onClose }) {
           </button>
         </div>
       </div>
-    </div>
+    </Overlay>
   );
 }
 
