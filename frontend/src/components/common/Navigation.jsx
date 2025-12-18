@@ -100,7 +100,7 @@ function Navigation() {
                     {role}
                   </span>
                 </div>
-                <div className="w-10 md:h-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-400 flex items-center justify-center text-white font-bold text-base">
+                <div className="w-10 md:h-10 rounded-full bg-linear-to-br from-blue-400 to-purple-400 flex items-center justify-center text-white font-bold text-base">
                   {userName ? userName.charAt(0).toUpperCase() : "👤"}
                 </div>
                 <ChevronDown size={20} />
