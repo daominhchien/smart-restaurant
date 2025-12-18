@@ -138,8 +138,14 @@ public class QrHistoryServiceImpl implements QrHistoryService {
     }
     public void verify(String token, HttpServletResponse response) throws NoSuchAlgorithmException, InvalidKeyException, IOException {
         boolean ok = verifyTableQRCode(token);
-        String redirectUrl = ok ? "http://192.168.1.173/api/tables" : "http://192.168.1.173/api/qr/error";
+        String[] parts = token.split("\\.");
+        if (parts.length != 4) throw new AppException(ErrorCode.INVALID_TOKEN_FORMAT);
+
+        Integer tenantId = Integer.parseInt(parts[0]);
+        Integer tableId = Integer.parseInt(parts[1]);
+        String redirectUrl = ok ? "http://172.16.25.32/api/order/"+tenantId+"/tables/"+tableId : "http://172.16.25.32/api/qr/error";
         response.sendRedirect(redirectUrl);
     }
+
 
 }
