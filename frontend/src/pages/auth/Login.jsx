@@ -12,19 +12,33 @@ function Login() {
     e.preventDefault();
 
     // 🔥 Fake token
-    const fakePayload = {
-      sub: email,
-      scope: "ROLE_SUPER_ADMIN",
-      exp: 9999999999,
-    };
+    const fakePayload =
+      email == "superadmin@gmail.com"
+        ? {
+            sub: email,
+            scope: "ROLE_SUPER_ADMIN",
+            exp: 9999999999,
+          }
+        : email == "admin@gmail.com"
+        ? {
+            sub: email,
+            scope: "ROLE_ADMIN",
+            exp: 9999999999,
+          }
+        : {};
 
     const fakeToken = createFakeJWT(fakePayload);
+    console.log(fakePayload);
     localStorage.setItem("userName", email);
     // Login vào context
     login(fakeToken);
 
     // Redirect
-    navigate("/super-admin/accounts", { replace: true });
+
+    const role = localStorage.getItem("role");
+    role == "SUPER_ADMIN"
+      ? navigate("/super-admin/accounts", { replace: true })
+      : navigate(`/${role.toLocaleLowerCase()}/dashboard`);
   };
 
   return (
