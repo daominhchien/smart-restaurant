@@ -1,4 +1,5 @@
 
+
 package com.smart_restaurant.demo.Repository;
 
 import com.smart_restaurant.demo.entity.RestaurantTable;
