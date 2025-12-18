@@ -21,7 +21,7 @@ public class QrHistory {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Integer qrId;
     String qr_url;
-    boolean active;
+    Boolean active;
     @CreationTimestamp
     @Column(name = "create_at", updatable = false)
     LocalDateTime createAt;

@@ -12,6 +12,7 @@ import com.smart_restaurant.demo.Service.QrHistoryService;
 import com.smart_restaurant.demo.Service.TenantService;
 import com.smart_restaurant.demo.dto.Response.QrResponse;
 import com.smart_restaurant.demo.entity.QrHistory;
+import com.smart_restaurant.demo.entity.RestaurantTable;
 import com.smart_restaurant.demo.exception.AppException;
 import com.smart_restaurant.demo.exception.ErrorCode;
 import com.smart_restaurant.demo.mapper.QrHistoryMapper;
@@ -104,11 +105,18 @@ public class QrHistoryServiceImpl implements QrHistoryService {
         BufferedImage qrImage = generateQRCodeImage(url);
         String publicId = "qr_table_" + tableId;
         String qrUrl = uploadQRCodeToCloudinary(qrImage, publicId);
+        if(qrHistoryRepository.existsByRestaurantTable_TableIdAndActiveTrue(tableId)){
+            QrHistory qrHistory=qrHistoryRepository.findByRestaurantTable_TableIdAndActiveTrue(tableId).get();
+            qrHistory.setActive(false);
+            qrHistoryRepository.save(qrHistory);
+        }
         QrHistory qrHistory=new QrHistory();
         qrHistory.setActive(true);
         qrHistory.setQr_url(qrUrl);
         qrHistory.setRestaurantTable(tableRepository.findById(tableId).get());
-        return qrHistoryMapper.toQrResponse(qrHistoryRepository.save(qrHistory));
+        QrResponse qrResponse=qrHistoryMapper.toQrResponse(qrHistoryRepository.save(qrHistory));
+        qrResponse.setCreateAt(qrHistory.getCreateAt());
+        return qrResponse;
     }
     @Override
     public boolean verifyTableQRCode(String token) throws NoSuchAlgorithmException, InvalidKeyException {
@@ -143,7 +151,7 @@ public class QrHistoryServiceImpl implements QrHistoryService {
 
         Integer tenantId = Integer.parseInt(parts[0]);
         Integer tableId = Integer.parseInt(parts[1]);
-        String redirectUrl = ok ? "http://172.16.25.32/api/order/"+tenantId+"/tables/"+tableId : "http://172.16.25.32/api/qr/error";
+        String redirectUrl = ok ? "http://192.168.1.66:8080/api/order/"+tenantId+"/tables/"+tableId : "http://192.168.1.66:8080/api/qr/error";
         response.sendRedirect(redirectUrl);
     }
 
