@@ -5,6 +5,7 @@ import com.smart_restaurant.demo.Repository.TenantRepository;
 import com.smart_restaurant.demo.Service.AccountService;
 import com.smart_restaurant.demo.Service.TableService;
 import com.smart_restaurant.demo.dto.Request.TableRequest;
+import com.smart_restaurant.demo.dto.Request.UpdateTableRequest;
 import com.smart_restaurant.demo.dto.Response.TableResponse;
 import com.smart_restaurant.demo.entity.RestaurantTable;
 import com.smart_restaurant.demo.entity.Tenant;
@@ -61,7 +62,7 @@ public class TableServiceImpl implements TableService {
         restaurantTable = tableRepository.save(restaurantTable);
         TableResponse tableResponse = tableMapper.toTableResponse(restaurantTable);
         tableResponse.setIs_active(restaurantTable.getIs_active());
-        tableResponse.setTenantId(tenantId);
+        tableResponse.setTenantId(restaurantTable.getTenant().getTenantId());
         tableResponse.setOrders(restaurantTable.getOrders());
         return tableResponse;
     }
@@ -70,6 +71,35 @@ public class TableServiceImpl implements TableService {
     public Page<TableResponse> getAllTable(Integer pageNumber, Integer pageSize, Integer tenantId) {
         Pageable pageable = PageRequest.of(pageNumber - 1 ,pageSize, Sort.by("tableId").descending());
         Page<RestaurantTable> restaurantTables = tableRepository.findAllByTenant_TenantId(tenantId, pageable);
-        return restaurantTables.map(tableMapper::toTableResponse);
+        return restaurantTables.map(restaurantTable -> {
+            TableResponse response = tableMapper.toTableResponse(restaurantTable);
+            response.setTenantId(restaurantTable.getTenant().getTenantId());  // thêm tenantId
+            response.setOrders(restaurantTable.getOrders());                 // thêm orders
+            return response;
+        });
+    }
+
+    @Override
+    public TableResponse updateTable(Integer id, UpdateTableRequest updateTableRequest, JwtAuthenticationToken jwtAuthenticationToken) {
+        String username = jwtAuthenticationToken.getName();
+        Integer tenantId = accountService.getTenantIdByUsername(username);
+        Tenant tenant = tenantRepository.findById(tenantId)
+                .orElseThrow(() -> new AppException(ErrorCode.TENANT_NOT_FOUND));
+
+        RestaurantTable restaurantTable = tableRepository.findById(id)
+                .orElseThrow(() -> new AppException((ErrorCode.TABLE_NOT_FOUND)));
+
+        if(!restaurantTable.getTenant().getTenantId().equals(tenantId)){
+            throw new AppException(ErrorCode.TABLE_NOT_BELONGS_TO_TENANT);
+
+        }
+
+        tableMapper.updateTable(restaurantTable,updateTableRequest);
+        restaurantTable = tableRepository.save(restaurantTable);
+        TableResponse updateTableResponse = tableMapper.toTableResponse(restaurantTable);
+        updateTableResponse.setTenantId(restaurantTable.getTenant().getTenantId());
+        updateTableResponse.setOrders(restaurantTable.getOrders());
+
+        return tableMapper.toTableResponse(restaurantTable);
     }
 }

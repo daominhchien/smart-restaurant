@@ -11,4 +11,5 @@ import java.util.Optional;
 public interface TableRepository extends JpaRepository<RestaurantTable,Integer> {
     Optional<RestaurantTable> findByTableName(String tableName);
     Page<RestaurantTable> findAllByTenant_TenantId(Integer tenantId, Pageable pageable);
+    Optional<RestaurantTable> findAllByTenant_TenantId(Integer tenantId);
 }

@@ -5,6 +5,7 @@ import com.smart_restaurant.demo.Repository.TenantRepository;
 import com.smart_restaurant.demo.Service.AccountService;
 import com.smart_restaurant.demo.Service.TableService;
 import com.smart_restaurant.demo.dto.Request.TableRequest;
+import com.smart_restaurant.demo.dto.Request.UpdateTableRequest;
 import com.smart_restaurant.demo.dto.Response.ApiResponse;
 import com.smart_restaurant.demo.dto.Response.TableResponse;
 import com.smart_restaurant.demo.entity.Tenant;
@@ -45,7 +46,6 @@ public class TableController {
 
         String username = jwtToken.getName();
         Integer tenantId = accountService.getTenantIdByUsername(username);
-
         Tenant tenant = tenantRepository.findById(tenantId)
                 .orElseThrow(() -> new AppException(ErrorCode.TENANT_NOT_FOUND));
 
@@ -55,5 +55,19 @@ public class TableController {
                 .message("get all thành công")
                 .build();
     }
+
+    @PutMapping("/{id}")
+    public ApiResponse<TableResponse> updateTable(
+            @PathVariable Integer id,
+            @Valid @RequestBody UpdateTableRequest updateTableRequest,
+            JwtAuthenticationToken jwtAuthenticationToken){
+
+        TableResponse tableResponse = tableService.updateTable(id,updateTableRequest,jwtAuthenticationToken);
+        return ApiResponse.<TableResponse>builder()
+                .message("Update thành công")
+                .result(tableResponse)
+                .build();
+    }
+
 
 }
