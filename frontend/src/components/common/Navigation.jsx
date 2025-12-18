@@ -28,7 +28,7 @@ function Navigation() {
   const styleLink =
     "px-2 py-1 rounded-lg border-b-2 border-[#5B94FF]/0 cursor-pointer hover:border-[#5B94FF]/80 hover:bg-[#5B94FF]/10 transition-colors";
 
-  const focusLink = "border-[#5B94FF]/50";
+  const focusLink = "border-[#5B94FF]/50 font-semibold";
 
   const mobileLinkStyle =
     "block px-4 py-3 rounded-lg hover:bg-[#5B94FF]/10 transition-colors";
@@ -43,8 +43,8 @@ function Navigation() {
   ];
 
   return (
-    <header className="bg-white shadow-sm">
-      <div className="px-4 py-3 md:px-8 lg:px-20 md:py-4">
+    <header className="bg-white shadow-sm grid grid-cols-12 sticky top-0 z-50">
+      <div className="col-start-2 col-end-12 py-3 md:py-4">
         <div className="flex items-center justify-between">
           {/* Left - Logo & Title */}
           <div className="flex items-center gap-2 md:gap-3">
