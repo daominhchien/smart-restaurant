@@ -3,7 +3,6 @@ package com.smart_restaurant.demo.Service.Impl;
 import com.smart_restaurant.demo.Repository.AccountRepository;
 import com.smart_restaurant.demo.Repository.BankRepository;
 import com.smart_restaurant.demo.Repository.TenantRepository;
-import com.smart_restaurant.demo.Service.AccountService;
 import com.smart_restaurant.demo.Service.BankService;
 import com.smart_restaurant.demo.Service.TenantService;
 import com.smart_restaurant.demo.dto.Request.TenantRequest;
@@ -35,7 +34,7 @@ public class TenantServiceImpl implements TenantService {
         Account account=accountRepository.findByUsername(jwtAuthenticationToken.getName()).get();
         if(!(account.getTenant()==null))
             throw new AppException(ErrorCode.TENANT_EXISTED);
-        if(account.is_email_verify()==false)
+        if(account.getIsEmailVerify()==false)
             throw new AppException(ErrorCode.NOT_VERIFY_EMAIL);
         System.out.println("Phone mapped: " + tenantRequest.getPhone());
         System.out.println("Phone mapped: " + tenantMapper.toTenant(tenantRequest).getNameTenant());
@@ -48,6 +47,12 @@ public class TenantServiceImpl implements TenantService {
     }
 
     @Override
+    public Tenant tenantId(JwtAuthenticationToken jwtAuthenticationToken) {
+        Account account=accountRepository.findByUsername(jwtAuthenticationToken.getName()).get();
+        if(account==null)
+            throw new AppException(ErrorCode.ACCOUNT_NOT_EXITS);
+        return account.getTenant();
+    }
     public TenantResponse updateTenant(Integer tenantId, UpdateTenantRequest updateTenantRequest, JwtAuthenticationToken jwtAuthenticationToken) {
         Account account=accountRepository.findByUsername(jwtAuthenticationToken.getName()).get();
         if((account.getTenant()==null))
@@ -56,7 +61,7 @@ public class TenantServiceImpl implements TenantService {
         Tenant tenant = account.getTenant();
 
         if (!tenant.getTenantId().equals(tenantId)) {
-            throw new AppException(ErrorCode.FORBIDDEN); // không cho update tenant khác
+            throw new AppException(ErrorCode.FOBIDEN); // không cho update tenant khác
         }
 
         tenantMapper.updateTenant(tenant, updateTenantRequest);

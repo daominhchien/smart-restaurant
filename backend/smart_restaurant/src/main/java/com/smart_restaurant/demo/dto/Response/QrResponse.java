@@ -3,12 +3,16 @@ package com.smart_restaurant.demo.dto.Response;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.time.LocalDateTime;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Builder
-public class AuthenticationResponse {
-    String acessToken;
-    boolean isFirstActivity;
+public class QrResponse {
+    Integer qrId;
+    String qr_url;
+    boolean active;
+    LocalDateTime createAt;
 }
