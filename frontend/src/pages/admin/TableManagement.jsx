@@ -8,64 +8,38 @@ import JSZip from "jszip";
 import { saveAs } from "file-saver";
 
 import TableCard from "../../components/admin/TableCard";
-
 import CreateTableDialog from "../../components/admin/CreateTableDialog";
 import EditTableDialog from "../../components/admin/EditTableDialog";
-
-/* ===== MOCK DATA (MATCH API RESPONSE) ===== */
-const mock_tables = [
-  {
-    tableId: 1,
-    tableName: "Bàn 01",
-    section: "Indoor",
-    capacity: 4,
-    is_active: true,
-    orders: [],
-  },
-  {
-    tableId: 2,
-    tableName: "Bàn 02",
-    section: "Outdoor",
-    capacity: 6,
-    is_active: true,
-    orders: [{ orderId: 101 }],
-  },
-  {
-    tableId: 3,
-    tableName: "VIP-01",
-    section: "VIP Room",
-    capacity: 10,
-    is_active: false,
-    orders: [],
-  },
-  {
-    tableId: 4,
-    tableName: "Bàn 04",
-    section: "Indoor",
-    capacity: 4,
-    is_active: true,
-    orders: [],
-  },
-];
+import tableApi from "../../api/tableApi";
 
 export default function TableManagement() {
   const [tables, setTables] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedTable, setSelectedTable] = useState(null);
 
+  /* ================= FETCH TABLES ================= */
   useEffect(() => {
-    setTables(mock_tables);
+    const fetchTables = async () => {
+      try {
+        const res = await tableApi.getAllTable(); // Spring pageable: page bắt đầu từ 0
+        setTables(res.result.content);
+        console.log(res.result.content);
+      } catch (error) {
+        toast.error("Không thể tải danh sách bàn");
+      }
+    };
+
+    fetchTables();
   }, []);
 
-  /* ===== FILTER ===== */
+  /* ================= FILTER ================= */
   const filteredTables = tables.filter((t) =>
     t.tableName.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  /* ===== GROUP STATUS (LOGIC GIỮ NGUYÊN) ===== */
+  /* ================= GROUP STATUS ================= */
   const groupedTables = {
     available: filteredTables.filter(
       (t) => t.is_active && t.orders.length === 0
@@ -74,7 +48,7 @@ export default function TableManagement() {
     inactive: filteredTables.filter((t) => !t.is_active),
   };
 
-  /* ===== QR ===== */
+  /* ================= QR ================= */
   const getQRUrl = (tableId) =>
     `https://restaurant.com/menu?tableId=${tableId}`;
 
@@ -104,7 +78,7 @@ export default function TableManagement() {
         pdf.setFont("helvetica", "normal");
         pdf.setFontSize(12);
         pdf.text(`Table: ${table.tableName}`, 20, 45);
-        pdf.text(`Section: ${table.section}`, 20, 55);
+        pdf.text(`Section: ${table.section ?? "N/A"}`, 20, 55);
         pdf.text(`Capacity: ${table.capacity}`, 20, 65);
         pdf.text(
           `Status: ${
@@ -148,15 +122,13 @@ export default function TableManagement() {
         });
 
         const pdf = new jsPDF("p", "mm", "a4");
-
         pdf.setFontSize(18);
         pdf.text("TABLE INFORMATION", 105, 20, { align: "center" });
         pdf.setFontSize(12);
         pdf.text(`Table: ${table.tableName}`, 20, 45);
-        pdf.text(`Section: ${table.section}`, 20, 55);
+        pdf.text(`Section: ${table.section ?? "N/A"}`, 20, 55);
 
         pdf.addImage(base64Image, "PNG", 120, 45, 60, 60);
-
         folder.file(`QR_${table.tableName}.pdf`, pdf.output("blob"));
       } catch {
         console.log("Skip table", table.tableId);
@@ -245,9 +217,16 @@ export default function TableManagement() {
           </div>
         ))}
       </div>
+
       {isCreateDialogOpen && (
-        <CreateTableDialog onClose={() => setIsCreateDialogOpen(false)} />
+        <CreateTableDialog
+          onClose={() => {
+            setIsCreateDialogOpen(false);
+            fetchTables();
+          }}
+        />
       )}
+
       {isEditDialogOpen && selectedTable && (
         <EditTableDialog
           table={selectedTable}

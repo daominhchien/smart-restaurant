@@ -4,17 +4,19 @@ import Overlay from "../common/Overlay";
 import { X } from "lucide-react";
 import toast from "react-hot-toast";
 
+import accountApi from "../../api/accountApi";
+
 function AddAccountCard({ onClose }) {
-  const [email, setEmail] = useState("");
+  const [username, setUserName] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [errors, setErrors] = useState({});
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const newErrors = {};
 
-    if (!email) {
-      newErrors.email = "Email không được để trống";
+    if (!username) {
+      newErrors.username = "Email không được để trống";
     }
 
     if (!password) {
@@ -29,11 +31,18 @@ function AddAccountCard({ onClose }) {
 
     if (Object.keys(newErrors).length > 0) return;
 
-    toast.success("Thêm tài khoản admin thành công");
-    // TODO: call API tạo account
-    console.log({ email, password });
+    try {
+      const res = await accountApi.createAccountAdmin({ username, password });
 
-    onClose?.();
+      console.log(res);
+
+      toast.success("Thêm tài khoản admin thành công");
+
+      onClose?.();
+    } catch (error) {
+      console.error(error);
+      toast.error("Tạo tài khoản thất bại");
+    }
   };
 
   return (
@@ -56,12 +65,12 @@ function AddAccountCard({ onClose }) {
         {/* form */}
         <div className="grid gap-3">
           <InputField
-            label="Email"
+            label="Tên tài khoản"
             type="email"
-            placeholder="newemail@gmail.com"
-            value={email}
-            onChange={setEmail}
-            error={errors.email}
+            placeholder="newadmin"
+            value={username}
+            onChange={setUserName}
+            error={errors.username}
             required
           />
 

@@ -1,17 +1,18 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import tableApi from "../../api/tableApi";
 
 export default function CreateTableDialog({ onClose }) {
   const [formData, setFormData] = useState({
     table_name: "",
-    section: "Indoor",
+    capacity: 1,
     is_active: true,
   });
 
   const resetForm = () => {
     setFormData({
       table_name: "",
-      section: "Indoor",
+      capacity: 1,
       is_active: true,
     });
   };
@@ -20,35 +21,33 @@ export default function CreateTableDialog({ onClose }) {
     resetForm();
   }, []);
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (!formData.table_name.trim()) {
       toast.error("Vui lòng nhập tên bàn");
       return;
     }
 
-    const newTable = {
-      table_id: Date.now().toString(),
-      table_name: formData.table_name,
-      section: formData.section,
+    if (formData.capacity < 1) {
+      toast.error("Sức chứa phải lớn hơn 0");
+      return;
+    }
+
+    const payload = {
+      tableName: formData.table_name,
+      capacity: formData.capacity,
       is_active: formData.is_active,
-      created_at: new Date().toISOString().split("T")[0],
-      updated_at: new Date().toISOString().split("T")[0],
-      qr_history: [
-        {
-          qr_id: `QR${Date.now()}`,
-          qr_url: `https://restaurant.com/menu?table=${Date.now()}`,
-          is_active: true,
-          created_at: new Date().toISOString().split("T")[0],
-          updated_at: new Date().toISOString().split("T")[0],
-        },
-      ],
     };
 
-    console.log("NEW TABLE:", newTable); // sau này gọi API
+    try {
+      await tableApi.createTable(payload);
 
-    toast.success("Tạo mới bàn thành công");
-    onClose();
-    resetForm();
+      toast.success("Tạo mới bàn thành công");
+      onClose();
+      resetForm();
+    } catch (err) {
+      console.error("CREATE TABLE ERROR:", err);
+      toast.error("Tạo bàn thất bại!");
+    }
   };
 
   return (
@@ -57,7 +56,10 @@ export default function CreateTableDialog({ onClose }) {
       <div className="fixed inset-0 z-50 bg-black/50" onClick={onClose} />
 
       {/* Dialog */}
-      <div className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg bg-white p-6 shadow-lg">
+      <div
+        className="fixed left-1/2 top-1/2 z-50 w-full max-w-md
+        -translate-x-1/2 -translate-y-1/2 rounded-lg bg-white p-6 shadow-lg"
+      >
         <h2 className="text-lg font-semibold mb-4">Tạo bàn mới</h2>
 
         <div className="space-y-4">
@@ -74,21 +76,22 @@ export default function CreateTableDialog({ onClose }) {
             />
           </div>
 
-          {/* Section */}
+          {/* Capacity */}
           <div>
-            <label className="text-sm font-medium">Khu vực *</label>
-            <select
-              value={formData.section}
+            <label className="text-sm font-medium">Sức chứa *</label>
+            <input
+              type="number"
+              min={1}
+              value={formData.capacity}
               onChange={(e) =>
-                setFormData({ ...formData, section: e.target.value })
+                setFormData({
+                  ...formData,
+                  capacity: Number(e.target.value),
+                })
               }
               className="w-full px-3 py-2 border rounded-md text-sm"
-            >
-              <option value="Indoor">Indoor</option>
-              <option value="Outdoor">Outdoor</option>
-              <option value="Patio">Patio</option>
-              <option value="VIP Room">VIP Room</option>
-            </select>
+              placeholder="VD: 4"
+            />
           </div>
 
           {/* Status */}
@@ -114,13 +117,15 @@ export default function CreateTableDialog({ onClose }) {
         <div className="flex gap-3 mt-6">
           <button
             onClick={onClose}
-            className="flex-1 border border-gray-400 rounded-md py-2 text-sm cursor-pointer hover:bg-gray-100"
+            className="flex-1 border border-gray-400 rounded-md py-2
+              text-sm cursor-pointer hover:bg-gray-100"
           >
             Hủy
           </button>
           <button
             onClick={handleCreate}
-            className="flex-1 bg-gray-900 text-white rounded-md py-2 text-sm cursor-pointer hover:opacity-90"
+            className="flex-1 bg-gray-900 text-white rounded-md py-2
+              text-sm cursor-pointer hover:opacity-90"
           >
             Tạo bàn
           </button>

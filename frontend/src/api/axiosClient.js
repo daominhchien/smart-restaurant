@@ -7,12 +7,15 @@ const axiosClient = axios.create({
   },
 });
 
-// Request Interceptor → tự gắn token
 axiosClient.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
-  if (token) {
+
+  // ❌ KHÔNG gắn token cho auth api
+  if (token && !config.url.startsWith("/auth")) {
+    console.log(`Bearer ${token}`);
     config.headers.Authorization = `Bearer ${token}`;
   }
+
   return config;
 });
 

@@ -12,6 +12,7 @@ import AccountManagement from "../pages/super-admin/AccountManagement";
 
 import Dashboard from "../pages/admin/Dashboard";
 import TableManagement from "../pages/admin/TableManagement";
+import RegisterInforTenant from "../pages/admin/RegisterInforTenant";
 
 import GuestLayout from "../components/layout/GuestLayout";
 import Menu from "../pages/guest/Menu";
@@ -35,17 +36,18 @@ export default function AppRouter() {
         <Route path="accounts" element={<AccountManagement />} />
       </Route>
 
-      {/* Admin */}
+      {/* Tenant Admin */}
       <Route
-        path="/admin"
+        path="/tenant-admin"
         element={
-          <RoleRoute allowedRoles={["ADMIN"]}>
+          <RoleRoute allowedRoles={["TENANT_ADMIN"]}>
             <AdminLayout />
           </RoleRoute>
         }
       >
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="table-management" element={<TableManagement />} />
+        <Route path="tenant-create" element={<RegisterInforTenant />} />
       </Route>
 
       {/* Guest */}

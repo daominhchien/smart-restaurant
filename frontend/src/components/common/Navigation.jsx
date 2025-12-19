@@ -3,9 +3,10 @@ import Logo from "../../assets/images/logo.png";
 import { useState, useEffect, useContext } from "react";
 import { AuthContext } from "../../context/AuthContext";
 import { ChevronDown, LogOut, Menu, X } from "lucide-react";
-import { useLocation, Link } from "react-router-dom";
+import { useLocation, Link, useNavigate } from "react-router-dom";
 
 function Navigation() {
+  const navigate = useNavigate();
   const location = useLocation();
   const pathname = location.pathname;
 
@@ -76,17 +77,21 @@ function Navigation() {
           </div>
 
           {/* Center - Desktop Navigation (hidden on mobile) */}
-          <nav className="hidden lg:flex gap-3">
-            {navItems.map((item) => (
-              <Link
-                key={item.to}
-                to={item.to}
-                className={`${styleLink} ${isActive(item.to) ? focusLink : ""}`}
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
+          {!pathname.includes("tenant-create") && (
+            <nav className="hidden lg:flex gap-3">
+              {navItems.map((item) => (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  className={`${styleLink} ${
+                    isActive(item.to) ? focusLink : ""
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+          )}
 
           {/* Right - User Menu & Mobile Toggle */}
           <div className="flex items-center gap-2">
@@ -141,22 +146,24 @@ function Navigation() {
             </div>
 
             {/* Navigation links */}
-            <div className="flex flex-col gap-1">
-              {navItems.map((item) => (
-                <Link
-                  key={item.to}
-                  to={item.to}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`${mobileLinkStyle} ${
-                    isActive(item.to)
-                      ? "bg-[#5B94FF]/10 border-l-4 border-[#5B94FF]"
-                      : ""
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </div>
+            {mobileMenuOpen && !pathname.includes("tenant-create") && (
+              <div className="flex flex-col gap-1">
+                {navItems.map((item) => (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`${mobileLinkStyle} ${
+                      isActive(item.to)
+                        ? "bg-[#5B94FF]/10 border-l-4 border-[#5B94FF]"
+                        : ""
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            )}
 
             {/* Logout button */}
             <button
