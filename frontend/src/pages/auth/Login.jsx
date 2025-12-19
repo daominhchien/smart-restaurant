@@ -1,6 +1,7 @@
 import { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
+import authApi from "../../api/authApi";
 
 function Login() {
   const [email, setEmail] = useState("");
@@ -8,37 +9,34 @@ function Login() {
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // 🔥 Fake token
-    const fakePayload =
-      email == "superadmin@gmail.com"
-        ? {
-            sub: email,
-            scope: "ROLE_SUPER_ADMIN",
-            exp: 9999999999,
-          }
-        : email == "admin@gmail.com"
-        ? {
-            sub: email,
-            scope: "ROLE_ADMIN",
-            exp: 9999999999,
-          }
-        : {};
+    try {
+      const res = await authApi.login({
+        userName: email,
+        password: password,
+      });
+      console.log(res);
+      localStorage.setItem("userName", email);
+      const accessToken = res.result.acessToken;
 
-    const fakeToken = createFakeJWT(fakePayload);
-    console.log(fakePayload);
-    localStorage.setItem("userName", email);
-    // Login vào context
-    login(fakeToken);
+      // login vào context (context tự lo decode + lưu)
+      login(accessToken);
 
-    // Redirect
+      // lấy role từ localStorage (do AuthContext set)
+      const role = localStorage.getItem("role");
 
-    const role = localStorage.getItem("role");
-    role == "SUPER_ADMIN"
-      ? navigate("/super-admin/accounts", { replace: true })
-      : navigate(`/${role.toLocaleLowerCase()}/dashboard`);
+      // redirect
+      if (role === "SUPER_ADMIN") {
+        navigate("/super-admin/accounts", { replace: true });
+      } else {
+        navigate(`/${role.toLowerCase()}/dashboard`, { replace: true });
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Sai tài khoản hoặc mật khẩu");
+    }
   };
 
   return (
@@ -53,7 +51,7 @@ function Login() {
           <label>
             <p className="font-bold mb-1">Email</p>
             <input
-              type="email"
+              type="text"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required

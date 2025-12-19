@@ -18,11 +18,22 @@ function Navigation() {
     setUserName(localStorage.getItem("userName") || "");
   }, []);
 
-  const handleLogout = () => {
-    logout();
-    localStorage.clear();
-  };
+  const handleLogout = async () => {
+    try {
+      // gọi API logout (nếu backend cần)
+      await authApi.logout();
+    } catch (error) {
+      // logout vẫn tiếp tục dù API fail (token hết hạn, 401, v.v.)
+      console.warn("Logout API failed:", error);
+    } finally {
+      // clear auth state
+      logout();
+      localStorage.clear();
 
+      // về trang login
+      navigate("/login", { replace: true });
+    }
+  };
   const isActive = (keyword) => pathname.includes(keyword);
 
   const styleLink =
