@@ -3,6 +3,7 @@
 import { Plus, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import jsPDF from "jspdf";
 
 import TableCard from "../../components/admin/TableCard";
 import CreateTableDialog from "../../components/admin/CreateTableDialog";
@@ -286,19 +287,127 @@ export default function TableManagement() {
     toast.success("Tạo lại QR thành công");
   };
 
+  // const handleDownloadQR = async (table) => {
+  //   const activeQR = table.qr_history.find((qr) => qr.is_active);
+  //   if (!activeQR) return;
+
+  //   const res = await fetch(activeQR.qr_url);
+  //   const blob = await res.blob();
+  //   const url = URL.createObjectURL(blob);
+
+  //   const a = document.createElement("a");
+  //   a.href = url;
+  //   a.download = `${table.table_name}.png`;
+  //   a.click();
+  //   URL.revokeObjectURL(url);
+  // };
+
   const handleDownloadQR = async (table) => {
     const activeQR = table.qr_history.find((qr) => qr.is_active);
-    if (!activeQR) return;
+    if (!activeQR) {
+      toast.error("No active QR found");
+      return;
+    }
 
-    const res = await fetch(activeQR.qr_url);
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
+    try {
+      const res = await fetch(activeQR.qr_url);
+      const blob = await res.blob();
 
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${table.table_name}.png`;
-    a.click();
-    URL.revokeObjectURL(url);
+      const reader = new FileReader();
+      reader.readAsDataURL(blob);
+
+      reader.onloadend = () => {
+        const base64Image = reader.result;
+
+        // 👉 A4 PDF
+        const pdf = new jsPDF("p", "mm", "a4");
+
+        /* ===== HEADER ===== */
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(18);
+        pdf.text("TABLE INFORMATION", 105, 20, { align: "center" });
+
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(12);
+        pdf.text("Restaurant ABC", 105, 28, { align: "center" });
+
+        /* ===== INFO ===== */
+        pdf.text(`Table ID: ${table.table_id}`, 20, 45);
+        pdf.text(`Table Name: ${table.table_name}`, 20, 55);
+        pdf.text(`Section: ${table.section}`, 20, 65);
+        pdf.text(`Status: ${table.is_active ? "Active" : "Inactive"}`, 20, 75);
+        pdf.text(`QR Created: ${activeQR.created_at}`, 20, 85);
+
+        /* ===== QR IMAGE ===== */
+        pdf.addImage(base64Image, "PNG", 120, 45, 60, 60);
+
+        /* ===== FOOTER ===== */
+        pdf.setFontSize(10);
+        pdf.text("Scan QR to view menu", 150, 115, { align: "center" });
+
+        /* ===== FILE NAME ===== */
+        // "Bàn 02" -> "02"
+        const tableNumber =
+          table.table_name.match(/\d+/)?.[0] || table.table_id;
+
+        pdf.save(`QR_${tableNumber}.pdf`);
+      };
+    } catch (error) {
+      toast.error("Download QR failed");
+    }
+  };
+
+  const handleDownloadAllQR = async () => {
+    const pdf = new jsPDF("p", "mm", "a4");
+    let isFirstPage = true;
+
+    for (const table of tables) {
+      const activeQR = table.qr_history.find((qr) => qr.is_active);
+      if (!activeQR) continue;
+
+      try {
+        const res = await fetch(activeQR.qr_url);
+        const blob = await res.blob();
+
+        const base64Image = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(blob);
+          reader.onloadend = () => resolve(reader.result);
+        });
+
+        if (!isFirstPage) {
+          pdf.addPage();
+        }
+        isFirstPage = false;
+
+        /* ===== HEADER ===== */
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(18);
+        pdf.text("TABLE INFORMATION", 105, 20, { align: "center" });
+
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(12);
+        pdf.text("Restaurant ABC", 105, 28, { align: "center" });
+
+        /* ===== INFO ===== */
+        pdf.text(`Table ID: ${table.table_id}`, 20, 45);
+        pdf.text(`Table Name: ${table.table_name}`, 20, 55);
+        pdf.text(`Section: ${table.section}`, 20, 65);
+        pdf.text(`Status: ${table.is_active ? "Active" : "Inactive"}`, 20, 75);
+        pdf.text(`QR Created: ${activeQR.created_at}`, 20, 85);
+
+        /* ===== QR IMAGE ===== */
+        pdf.addImage(base64Image, "PNG", 120, 45, 60, 60);
+
+        /* ===== FOOTER ===== */
+        pdf.setFontSize(10);
+        pdf.text("Scan QR to view menu", 150, 115, { align: "center" });
+      } catch (err) {
+        console.error("Skip table:", table.table_id);
+      }
+    }
+
+    pdf.save("ALL_TABLE_QR.pdf");
   };
 
   return (
@@ -311,9 +420,10 @@ export default function TableManagement() {
             Hiển thị theo card & trạng thái
           </p>
         </div>
+
         <button
           onClick={() => setIsCreateDialogOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-md"
+          className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-md cursor-pointer hover:opacity-90"
         >
           <Plus size={18} />
           Thêm bàn
@@ -338,6 +448,16 @@ export default function TableManagement() {
 
       {/* TABLE CARDS */}
       <div className="bg-white p-6 rounded-lg border border-gray-200  shadow-sm space-y-10">
+        <div className="flex items-center justify-between">
+          <p className="font-bold">Danh sách bàn</p>
+          <button
+            onClick={handleDownloadAllQR}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md cursor-pointer hover:opacity-90"
+          >
+            Tải tất cả QR
+          </button>
+        </div>
+
         {[
           { key: "available", title: "🟢 Có sẵn" },
           { key: "occupied", title: "🔴 Đã sử dụng" },

@@ -12,6 +12,9 @@ import AccountManagement from "../pages/super-admin/AccountManagement";
 
 import Dashboard from "../pages/admin/Dashboard";
 import TableManagement from "../pages/admin/TableManagement";
+
+import GuestLayout from "../components/layout/GuestLayout";
+import Menu from "../pages/guest/Menu";
 export default function AppRouter() {
   return (
     <Routes>
@@ -43,6 +46,11 @@ export default function AppRouter() {
       >
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="table-management" element={<TableManagement />} />
+      </Route>
+
+      {/* Guest */}
+      <Route path="/guest" element={<GuestLayout />}>
+        <Route path="menu" element={<Menu />} />
       </Route>
 
       {/* 404 - Route không tồn tại */}
