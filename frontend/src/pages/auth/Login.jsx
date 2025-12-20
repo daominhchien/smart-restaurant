@@ -64,7 +64,6 @@ function Login() {
       if (role == "TENANT_ADMIN") {
         try {
           const profile = await tenantApi.getTenantProfile();
-          console.log("TENANT PROFILE:", profile);
         } catch (profileError) {
           if (profileError?.response?.status === 403) {
             toast.error("Bạn cần tạo nhà hàng trước khi sử dụng hệ thống.");
@@ -88,7 +87,7 @@ function Login() {
 
   return (
     <div className="w-full bg-gray-100 h-screen flex items-start justify-center pt-20">
-      <div className="bg-white w-1/2 lg:w-1/3 xl:w-1/4 rounded-2xl shadow-xl p-8 flex flex-col gap-4">
+      <div className="bg-white w-4/5 lg:w-1/3 xl:w-1/4 rounded-2xl shadow-xl p-8 flex flex-col gap-4">
         <h1 className="font-extrabold text-2xl text-center text-[#5B94FF]">
           Hệ thống quản lý nhà hàng
         </h1>

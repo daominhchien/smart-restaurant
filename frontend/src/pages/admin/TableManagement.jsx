@@ -1,6 +1,4 @@
-"use client";
-
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Download } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import jsPDF from "jspdf";
@@ -28,37 +26,36 @@ export default function TableManagement() {
   useEffect(() => {
     const fetchTables = async () => {
       try {
-        const res = await tableApi.getAllTable(); // Spring pageable: page bắt đầu từ 0
+        const res = await tableApi.getAllTable();
         setTables(res.result.content);
-        console.log(res.result.content);
       } catch (error) {
         toast.error("Không thể tải danh sách bàn");
       }
     };
     fetchTables();
-  }, []);
+  }, [isCreateDialogOpen, isEditDialogOpen]);
 
   /* ================= FILTER ================= */
   const filteredTables = tables.filter((t) =>
     t.tableName.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  /* ================= GROUP STATUS ================= */
+  /* ================= GROUP STATUS (THEO TableCard LOGIC) ================= */
   const groupedTables = {
     available: filteredTables.filter(
-      (t) => t.is_active && t.orders.length === 0
+      (t) =>
+        t.is_active &&
+        (t.statusTable === "unoccupied" || t.statusTable === null)
     ),
-    occupied: filteredTables.filter((t) => t.is_active && t.orders.length > 0),
+    occupied: filteredTables.filter(
+      (t) => t.is_active && t.statusTable === "occupied"
+    ),
     inactive: filteredTables.filter((t) => !t.is_active),
   };
 
   /* ================= QR ================= */
   const getQRUrl = (tableId) =>
     `https://restaurant.com/menu?tableId=${tableId}`;
-
-  const handleRegenerateQR = () => {
-    toast.success("Tạo lại QR thành công");
-  };
 
   // ======= TẢI TẤT CẢ QR =======
   const handleDownloadAllQR = async () => {
@@ -68,7 +65,6 @@ export default function TableManagement() {
 
     try {
       if (downloadFormat === "png") {
-        // === ZIP PNG ===
         const zip = new JSZip();
         const folder = zip.folder("TABLE_QR_PNG");
 
@@ -85,7 +81,6 @@ export default function TableManagement() {
         const zipBlob = await zip.generateAsync({ type: "blob" });
         saveAs(zipBlob, "ALL_TABLE_QR_PNG.zip");
       } else {
-        // === SINGLE PDF ===
         const pdf = new jsPDF("p", "mm", "a4");
 
         for (let i = 0; i < activeTables.length; i++) {
@@ -165,17 +160,18 @@ export default function TableManagement() {
 
       {/* TABLE CARDS */}
       <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm space-y-10">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="font-bold text-xl">Danh sách bàn</p>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between ">
+          <div className="">
+            <p className="text-left font-bold text-xl">Danh sách bàn</p>
             <p className="text-sm text-gray-500">
               Tất cả bàn hiện có của nhà hàng và trạng thái hoạt động
             </p>
           </div>
           <button
             onClick={() => setIsDownloadDialogOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md cursor-pointer hover:opacity-90"
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md cursor-pointer hover:opacity-90"
           >
+            <Download size={18} />
             Tải tất cả QR
           </button>
         </div>
@@ -196,7 +192,6 @@ export default function TableManagement() {
                     setSelectedTable(table);
                     setIsEditDialogOpen(true);
                   }}
-                  onQR={handleRegenerateQR}
                 />
               ))}
             </div>
@@ -212,22 +207,18 @@ export default function TableManagement() {
       {isEditDialogOpen && selectedTable && (
         <EditTableDialog
           table={selectedTable}
-          tables={tables}
-          setTables={setTables}
           onClose={() => setIsEditDialogOpen(false)}
         />
       )}
 
-      {/* DOWNLOAD MODAL (TỰ CODE, KHÔNG DÙNG HEADLESSUI) */}
+      {/* DOWNLOAD MODAL */}
       {isDownloadDialogOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          {/* overlay */}
           <div
             className="absolute inset-0 bg-black/40"
             onClick={() => !downloading && setIsDownloadDialogOpen(false)}
           ></div>
 
-          {/* modal content */}
           <div className="relative bg-white rounded-lg p-6 w-[90%] max-w-md shadow-lg z-10">
             <h2 className="text-lg font-semibold mb-4">
               Chọn định dạng tải QR
