@@ -58,22 +58,23 @@ function Login() {
       // 1. login vào context (set token + role)
       await login(accessToken);
 
-      // 2. gọi profile và bắt riêng lỗi 403
-      try {
-        const profile = await tenantApi.getTenantProfile();
-        console.log("TENANT PROFILE:", profile);
-      } catch (profileError) {
-        if (profileError?.response?.status === 403) {
-          toast.error("Bạn cần tạo nhà hàng trước khi sử dụng hệ thống.");
-          navigate("/tenant-admin/tenant-create", { replace: true });
-          return;
-        }
-        throw profileError; // nếu lỗi khác, ném lên catch ngoài
-      }
-
-      // 3. redirect
       const role = localStorage.getItem("role");
-      console.log(role);
+
+      // 2. gọi profile và bắt riêng lỗi 403
+      if (role == "TENANT_ADMIN") {
+        try {
+          const profile = await tenantApi.getTenantProfile();
+          console.log("TENANT PROFILE:", profile);
+        } catch (profileError) {
+          if (profileError?.response?.status === 403) {
+            toast.error("Bạn cần tạo nhà hàng trước khi sử dụng hệ thống.");
+            navigate("/tenant-admin/tenant-create", { replace: true });
+            return;
+          }
+          throw profileError; // nếu lỗi khác, ném lên catch ngoài
+        }
+      }
+      // 3. redirect
       if (role === "SUPER_ADMIN") {
         navigate("/super-admin/accounts", { replace: true });
       } else {

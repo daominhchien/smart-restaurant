@@ -23,9 +23,11 @@ axiosClient.interceptors.request.use((config) => {
 axiosClient.interceptors.response.use(
   (response) => response?.data ?? response,
   (error) => {
+    const status = error.response?.status;
     // Nếu token hết hạn → chuyển về login
-    if (error.response?.status === 401) {
+    if (status === 401 || status === 500) {
       localStorage.removeItem("token");
+      window.location.href = "/login";
     }
     return Promise.reject(error);
   }
