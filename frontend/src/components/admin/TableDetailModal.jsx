@@ -8,6 +8,14 @@ export default function TableDetailModal({
   onQR,
   onDownload,
 }) {
+  console.log(table);
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "—";
+
+    const fixed = dateStr.replace(/\.(\d{3})\d+/, ".$1");
+    return new Date(fixed).toLocaleDateString("vi-VN");
+  };
+
   return (
     <Overlay onClose={onClose}>
       <div className="bg-white rounded-xl w-[420px] p-6 shadow-lg">
@@ -28,6 +36,16 @@ export default function TableDetailModal({
                 ? "Đang sử dụng"
                 : "Có sẵn"
               : "Không hoạt động"}
+          </div>
+          <div>
+            Ngày tạo:{" "}
+            {table.createAt
+              ? table.createAt.substring(8, 10) +
+                "/" +
+                table.createAt.substring(5, 7) +
+                "/" +
+                table.createAt.substring(0, 4)
+              : "—"}
           </div>
         </div>
 

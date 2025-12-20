@@ -25,7 +25,6 @@ export default function TableManagement() {
       try {
         const res = await tableApi.getAllTable(); // Spring pageable: page bắt đầu từ 0
         setTables(res.result.content);
-        console.log(res.result.content);
       } catch (error) {
         toast.error("Không thể tải danh sách bàn");
       }
