@@ -31,6 +31,8 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 
+import static java.util.stream.Collectors.toList;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -224,7 +226,7 @@ public class ItemServiceImpl implements ItemService {
 
 
             List<CategoryResponse> categoryDTOs = item.getCategory().stream()
-                    .map(c -> new CategoryResponse(c.getCategoryName(), c.getTenant().getTenantId()))
+                    .map(c -> new CategoryResponse(c.getCategoryId(),c .getCategoryName(), c.getTenant().getTenantId()))
                     .toList();
             itemResponse.setCategory(categoryDTOs);
 
