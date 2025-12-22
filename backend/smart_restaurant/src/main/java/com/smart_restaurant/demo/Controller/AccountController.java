@@ -97,7 +97,7 @@ public class AccountController {
     }
 
     @PreAuthorize("hasRole('TENANT_ADMIN')")
-    @PutMapping("/update-active-account/{accountId}")
+    @PatchMapping("/update-active-account/{accountId}")
     ApiResponse<AccountResponse> updateActiveAccount(
             @PathVariable Integer accountId,
             @RequestBody @Valid AccountUpdateIsActiveRequest updateRequest,
