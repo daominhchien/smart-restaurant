@@ -237,24 +237,25 @@ public Page<ItemResponse> getAllItems(int page, int size, String itemName, Integ
         }
     }
 
-    // Tạo Sort theo sortBy parameter
-    Sort sort = getSortBy(sortBy);
-    Pageable pageable = PageRequest.of(page, size, sort);
-            List<CategoryResponse> categoryDTOs = item.getCategory().stream()
-                    .map(c -> new CategoryResponse(c.getCategoryId(),c .getCategoryName(), c.getTenant().getTenantId()))
-                    .toList();
-            itemResponse.setCategory(categoryDTOs);
+    Page<Item> itemsPage;
 
-    // Lấy items theo điều kiện filter
-    Page<Item> itemsPage = itemRepository.findItemsByFilters(
-            tenantId, itemName, categoryId, pageable);
+    // Nếu sort POPULAR, dùng query riêng (COUNT order)
+    if (sortBy != null && sortBy.equalsIgnoreCase("POPULAR")) {
+        Pageable pageable = PageRequest.of(page, size);
+        itemsPage = itemRepository.findItemsByFiltersPopular(tenantId, itemName, categoryId, pageable);
+    } else {
+        // Các sort khác dùng Sort bình thường
+        Sort sort = getSortBy(sortBy);
+        Pageable pageable = PageRequest.of(page, size, sort);
+        itemsPage = itemRepository.findItemsByFilters(tenantId, itemName, categoryId, pageable);
+    }
 
     // Map sang ItemResponse
     return itemsPage.map(item -> {
         ItemResponse itemResponse = itemMapper.toItemResponse(item);
 
         List<CategoryResponse> categoryDTOs = item.getCategory().stream()
-                .map(c -> new CategoryResponse(c.getCategoryName(), c.getTenant().getTenantId()))
+                .map(c -> new CategoryResponse(c.getCategoryId(),c.getCategoryName(), c.getTenant().getTenantId()))
                 .toList();
         itemResponse.setCategory(categoryDTOs);
 
@@ -323,7 +324,7 @@ public Page<ItemResponse> getAllItems(int page, int size, String itemName, Integ
             sortBy = "POPULAR";
         }
         return switch (sortBy.toUpperCase()) {
-            case "POPULAR" -> Sort.by(Sort.Direction.DESC, "itemId");
+//            case "POPULAR" -> Sort.by(Sort.Direction.DESC, "itemId");
             case "PRICE_ASC" -> Sort.by(Sort.Direction.ASC, "price");
             case "PRICE_DESC" -> Sort.by(Sort.Direction.DESC, "price");
             case "NAME" -> Sort.by(Sort.Direction.ASC, "itemName");
