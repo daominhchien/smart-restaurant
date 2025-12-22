@@ -5,6 +5,7 @@ import com.smart_restaurant.demo.Repository.TenantRepository;
 import com.smart_restaurant.demo.Service.AccountService;
 import com.smart_restaurant.demo.Service.ModifierGroupService;
 import com.smart_restaurant.demo.dto.Request.ModifierGroupRequest;
+import com.smart_restaurant.demo.dto.Request.UpdateModifierGroupRequest;
 import com.smart_restaurant.demo.dto.Response.ModifierGroupResponse;
 import com.smart_restaurant.demo.entity.ModifierGroup;
 import com.smart_restaurant.demo.entity.Tenant;
@@ -46,7 +47,7 @@ public class ModifierGroupServiceImpl implements ModifierGroupService {
         // Kiêm tra tên này đã có chưa vs tenant này
         boolean existsModifierGroup = modifierGroupRepository.existsByNameAndTenantTenantId(request.getName(), tenantId);
         if(existsModifierGroup){
-            throw new AppException(ErrorCode.MODIFIER_GROUP_NOT_FOUND);
+            throw new AppException(ErrorCode.MODIFIER_GROUP_ALREADY_EXISTS_FOR_TENANT);
         }
 
 
@@ -93,5 +94,79 @@ public class ModifierGroupServiceImpl implements ModifierGroupService {
 
 
 
+    }
+    @Override
+    public ModifierGroupResponse getModifierGroupDetail(Integer modifierGroupId, JwtAuthenticationToken jwtAuthenticationToken) {
+        String username = jwtAuthenticationToken.getName();
+        Integer tenantId = accountService.getTenantIdByUsername(username);
+
+        ModifierGroup modifierGroup = modifierGroupRepository.findById(modifierGroupId)
+                .orElseThrow(() -> new AppException(ErrorCode.MODIFIER_GROUP_NOT_FOUND));
+
+        // Kiểm tra xem modifier group này thuộc tenant của user không
+        if (!modifierGroup.getTenant().getTenantId().equals(tenantId)) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
+
+        ModifierGroupResponse response = modifierGroupMapper.toModifierGroupResponse(modifierGroup);
+        response.setItems(modifierGroup.getItems());
+        response.setOptions(modifierGroup.getOptions());
+        response.setTenantId(modifierGroup.getTenant().getTenantId());
+
+        return response;
+    }
+
+    @Override
+    public ModifierGroupResponse updateModifierGroup(Integer modifierGroupId, UpdateModifierGroupRequest request, JwtAuthenticationToken jwtAuthenticationToken) {
+        String username = jwtAuthenticationToken.getName();
+        Integer tenantId = accountService.getTenantIdByUsername(username);
+
+        ModifierGroup modifierGroup = modifierGroupRepository.findById(modifierGroupId)
+                .orElseThrow(() -> new AppException(ErrorCode.MODIFIER_GROUP_NOT_FOUND));
+
+        // Kiểm tra xem modifier group này thuộc tenant của user không
+        if (!modifierGroup.getTenant().getTenantId().equals(tenantId)) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
+
+        // Kiểm tra tên mới đã tồn tại chưa (ngoại trừ chính nó)
+        if (!modifierGroup.getName().equals(request.getName())) {
+            boolean existsModifierGroup = modifierGroupRepository.existsByNameAndTenantTenantId(request.getName(), tenantId);
+            if (existsModifierGroup) {
+                throw new AppException(ErrorCode.MODIFIER_GROUP_NOT_FOUND);
+            }
+        }
+
+        // Cập nhật
+        modifierGroup.setName(request.getName());
+        ModifierGroup updatedModifierGroup = modifierGroupRepository.save(modifierGroup);
+
+        ModifierGroupResponse response = modifierGroupMapper.toModifierGroupResponse(updatedModifierGroup);
+        response.setItems(updatedModifierGroup.getItems());
+        response.setOptions(updatedModifierGroup.getOptions());
+        response.setTenantId(updatedModifierGroup.getTenant().getTenantId());
+
+        return response;
+    }
+
+    @Override
+    public void deleteModifierGroup(Integer modifierGroupId, JwtAuthenticationToken jwtAuthenticationToken) {
+        String username = jwtAuthenticationToken.getName();
+        Integer tenantId = accountService.getTenantIdByUsername(username);
+
+        ModifierGroup modifierGroup = modifierGroupRepository.findById(modifierGroupId)
+                .orElseThrow(() -> new AppException(ErrorCode.MODIFIER_GROUP_NOT_FOUND));
+
+        // Kiểm tra xem modifier group này thuộc tenant của user không
+        if (!modifierGroup.getTenant().getTenantId().equals(tenantId)) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
+
+        // Kiểm tra xem modifier group này có đang được sử dụng bởi item nào không
+        if (!modifierGroup.getItems().isEmpty()) {
+            throw new AppException(ErrorCode.MODIFIER_GROUP_IN_USE);
+        }
+
+        modifierGroupRepository.deleteById(modifierGroupId);
     }
 }
