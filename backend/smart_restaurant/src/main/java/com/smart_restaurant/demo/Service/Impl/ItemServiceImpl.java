@@ -286,7 +286,7 @@ public Page<ItemResponse> getAllItems(int page, int size, String itemName, Integ
         ItemResponse itemResponse = itemMapper.toItemResponse(item);
 
         if (item.getAvatar() != null) {
-            itemResponse.setAvatarUrl(item.getAvatar().getUrl());  // ← Lấy URL từ Image entity
+            itemResponse.setAvatarUrl(item.getAvatar().getUrl());
         }
 
         List<CategoryResponse> categoryDTOs = item.getCategory().stream()
