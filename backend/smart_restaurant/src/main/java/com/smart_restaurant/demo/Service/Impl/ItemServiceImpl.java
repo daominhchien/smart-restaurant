@@ -75,6 +75,7 @@ public class ItemServiceImpl implements ItemService {
 
         Item item = itemMapper.toItem(request);
         item.setCategory(categories);
+        item.setQuantitySold(0);
 
         Image avatar = Image.builder()
                 .url(request.getAvatarUrl())
