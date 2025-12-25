@@ -1,41 +1,45 @@
 import axios from "axios";
 
-const SERVER_PORT = import.meta.env.VITE_SERVER_PORT;
+const BASE_URL = "http://localhost:8081/api";
 
+/* ================= CLIENT ================= */
 const axiosClient = axios.create({
-  baseURL: `http://localhost:${SERVER_PORT}/api`,
-  headers: {
-    "Content-Type": "application/json",
-  },
+  baseURL: BASE_URL,
+  headers: { "Content-Type": "application/json" },
 });
 
-/* ===================== REQUEST ===================== */
-axiosClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
+/* ============ RAW CLIENT (không interceptor) ============ */
+const rawAxios = axios.create({
+  baseURL: BASE_URL,
+});
 
-  // ❗ CHỈ BỎ LOGIN – refresh vẫn cần token
-  if (token && !config.url.startsWith("/auth/login")) {
+/* ================= TOKEN ================= */
+const getAccessToken = () => localStorage.getItem("token");
+const getRefreshToken = () => localStorage.getItem("refreshToken");
+
+/* ============ PUBLIC ENDPOINTS ============ */
+const PUBLIC_ENDPOINTS = ["/auth/log-in", "/auth/refresh-token"];
+
+/* ================= REQUEST ================= */
+axiosClient.interceptors.request.use((config) => {
+  const token = getAccessToken();
+  const isPublic = PUBLIC_ENDPOINTS.some((p) => config.url.includes(p));
+
+  // ❗ login + refresh-token tuyệt đối KHÔNG gắn Authorization
+  if (token && !isPublic) {
     config.headers.Authorization = `Bearer ${token}`;
+  } else {
+    delete config.headers.Authorization;
   }
 
   return config;
 });
-/* =================================================== */
 
-/* ===================== REFRESH LOGIC ===================== */
+/* ================= REFRESH LOGIC ================= */
 let isRefreshing = false;
-let failedQueue = [];
+let queue = [];
 
-const processQueue = (error, token = null) => {
-  failedQueue.forEach((prom) => {
-    if (error) prom.reject(error);
-    else prom.resolve(token);
-  });
-  failedQueue = [];
-};
-/* ======================================================== */
-
-/* ===================== RESPONSE ===================== */
+/* ================= RESPONSE ================= */
 axiosClient.interceptors.response.use(
   (response) => response?.data ?? response,
   async (error) => {
@@ -44,45 +48,51 @@ axiosClient.interceptors.response.use(
 
     if (!error.response) return Promise.reject(error);
 
-    // ===== 401 =====
-    if (status === 500 && !originalRequest._retry) {
-      // ❌ LOGIN FAIL → logout
-      if (originalRequest.url.startsWith("/auth/login")) {
+    // ===== Chỉ refresh khi accessToken hết hạn =====
+    if (status === 401 && !originalRequest._retry) {
+      // Nếu chính login fail → logout
+      if (originalRequest.url.includes("/auth/log-in")) {
         localStorage.removeItem("token");
+        localStorage.removeItem("refreshToken");
         window.location.href = "/login";
         return Promise.reject(error);
       }
 
       originalRequest._retry = true;
 
-      // ===== WAIT QUEUE =====
+      // ===== Nếu đang refresh → đợi =====
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject });
-        }).then((token) => {
-          originalRequest.headers.Authorization = `Bearer ${token}`;
-          return axiosClient(originalRequest);
+          queue.push((token) => {
+            if (!token) reject(error);
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            resolve(axiosClient(originalRequest));
+          });
         });
       }
 
       isRefreshing = true;
 
       try {
-        const res = await axiosClient.post("/auth/refresh-token");
-        const newToken = res.result.accessToken;
+        const res = await rawAxios.post("/auth/refresh-token", {
+          refreshToken: getRefreshToken(),
+        });
 
-        localStorage.setItem("token", newToken);
+        const newAccessToken = res.data?.accessToken;
 
-        // 🔥 notify AuthContext
-        window.dispatchEvent(new Event("token-updated"));
+        localStorage.setItem("token", newAccessToken);
 
-        processQueue(null, newToken);
+        // Thả queue
+        queue.forEach((cb) => cb(newAccessToken));
+        queue = [];
 
-        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
         return axiosClient(originalRequest);
       } catch (err) {
-        processQueue(err, null);
+        queue.forEach((cb) => cb(null));
+        queue = [];
         localStorage.removeItem("token");
+        localStorage.removeItem("refreshToken");
         window.location.href = "/login";
         return Promise.reject(err);
       } finally {
@@ -93,6 +103,5 @@ axiosClient.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-/* =================================================== */
 
 export default axiosClient;
