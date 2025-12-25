@@ -18,8 +18,9 @@ public class ItemResponse {
     String description;
     Double price;
     String avatarUrl;
-    boolean status;
+    Boolean status;
     Boolean isKitchen;
+    Integer quantitySold;
     List<CategoryResponse> category;
     List<ModifierGroupResponse> modifierGroup;
 }
