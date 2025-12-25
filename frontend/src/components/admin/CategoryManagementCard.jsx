@@ -96,21 +96,19 @@ function CategoryManagementCard() {
           <h3 className="text-base sm:text-lg font-semibold text-gray-800">
             Quản lý danh mục
           </h3>
-          <p className="text-xs sm:text-sm text-gray-500">
-            {categories.length} danh mục
-          </p>
         </div>
 
         <button
           onClick={() => setShowCreate((prev) => !prev)}
           className="
-            px-3 py-1.5
+            px-3 py-2
             text-sm
             rounded-md
             bg-blue-600
             text-white
             hover:bg-blue-700
             transition
+            cursor-pointer
           "
         >
           {showCreate ? "Đóng" : "+ Thêm danh mục"}

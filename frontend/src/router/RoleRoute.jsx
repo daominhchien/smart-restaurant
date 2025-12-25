@@ -4,6 +4,7 @@ import { AuthContext } from "../context/AuthContext";
 
 function RoleRoute({ children, allowedRoles = [] }) {
   const { isLoggedIn, role } = useContext(AuthContext);
+  console.log("is loggin: " + isLoggedIn);
 
   if (!isLoggedIn) return <Navigate to="/login" replace />;
 
