@@ -22,9 +22,9 @@ public class ItemSpecification {
             List<Predicate> predicates = new ArrayList<>();
 
             if (tenantId != null) {
-                predicates.add(
-                        cb.equal(root.get("tenant").get("tenantId"), tenantId)
-                );
+                Join<Item, Category> categoryJoin = root.join("category", JoinType.INNER);
+                predicates.add(cb.equal(categoryJoin.get("tenant").get("tenantId"), tenantId));
+                query.distinct(true);
             }
             if (name != null && !name.isBlank()) {
                 predicates.add(
