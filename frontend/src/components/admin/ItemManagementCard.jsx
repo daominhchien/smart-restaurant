@@ -45,7 +45,7 @@ function ItemManagementCard() {
   // ===== FETCH WHEN CHANGE =====
   useEffect(() => {
     fetchItems();
-  }, [page, sortBy, direction, status]);
+  }, [page, sortBy, direction, status, openAdd]);
 
   // ===== RESET PAGE WHEN FILTER CHANGE =====
   const handleChange = (setter) => (e) => {

@@ -21,7 +21,7 @@ const itemApi = {
     });
   },
 
-  addNewItem: (data) => axiosClient.post("/api/menu/items", data),
+  addNewItem: (data) => axiosClient.post("/menu/items", data),
 };
 
 export default itemApi;

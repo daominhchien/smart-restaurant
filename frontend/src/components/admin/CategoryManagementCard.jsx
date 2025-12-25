@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import categoryApi from "../../api/CategoryApi";
+import categoryApi from "../../api/categoryApi";
 import toast from "react-hot-toast";
 
 function CategoryManagementCard() {
@@ -196,9 +196,6 @@ function CategoryManagementCard() {
                   <div className="min-w-0">
                     <p className="font-medium text-gray-800 truncate">
                       {category.categoryName}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      ID: {category.categoryId}
                     </p>
                   </div>
 

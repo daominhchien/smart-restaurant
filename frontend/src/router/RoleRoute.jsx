@@ -6,6 +6,7 @@ function RoleRoute({ children, allowedRoles = [] }) {
   const { isLoggedIn, role } = useContext(AuthContext);
 
   if (!isLoggedIn) return <Navigate to="/login" replace />;
+
   if (!allowedRoles.includes(role))
     return <Navigate to="/unauthorized" replace />;
 

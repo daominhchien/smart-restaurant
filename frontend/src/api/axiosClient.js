@@ -82,6 +82,9 @@ axiosClient.interceptors.response.use(
 
         localStorage.setItem("token", newAccessToken);
 
+        // 🔥 BẮT BUỘC: báo cho AuthContext
+        window.dispatchEvent(new Event("token-updated"));
+
         // Thả queue
         queue.forEach((cb) => cb(newAccessToken));
         queue = [];
