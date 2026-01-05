@@ -95,8 +95,8 @@ public class OrderServiceImpl implements OrderService {
                 .orElseThrow(() -> new AppException(ErrorCode.TABLE_NOT_FOUND));
 
         // Kiểm tra bàn này đã có order chưa
-        List<Order> existingOrders = orderRepository.findByTable_TableId(orderRequest.getTableId());
-        if (existingOrders != null && !existingOrders.isEmpty()) {
+        List<Order> activeOrders = orderRepository.findByTable_TableIdAndStatus_OrderStatusNot(orderRequest.getTableId(), OrderStatus.Deleted);
+        if (!activeOrders.isEmpty()) {
             throw new AppException(ErrorCode.TABLE_ALREADY_HAS_ORDER);
         }
 
@@ -184,12 +184,15 @@ public class OrderServiceImpl implements OrderService {
         return response;
     }
 
+
+
     @Override
     public List<OrderResponse> getAllMyOrder(JwtAuthenticationToken jwtAuthenticationToken) {
         String username = jwtAuthenticationToken.getName();
         // lay account tu username
         Account account = accountRepository.findByUsername(username)
                 .orElseThrow(() -> new AppException(ErrorCode.ACCOUNT_NOT_FOUND));
+
         Integer accountId = account.getAccountId();
 
         // Tim customer boi account
@@ -210,8 +213,14 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public List<OrderResponse> getAllTenantOrder(JwtAuthenticationToken jwtAuthenticationToken) {
-        // Nhà hang dăng nhap
+
         String username = jwtAuthenticationToken.getName();
+        Account account = accountRepository.findByUsername(username)
+                .orElseThrow(() -> new AppException(ErrorCode.ACCOUNT_NOT_FOUND));
+
+        if (account.getTenant() == null) {
+            throw new AppException(ErrorCode.UNAUTHORIZED); // Chặn CUSTOMER hoặc SUPER_ADMIN
+        }
         Integer tenantId = accountService.getTenantIdByUsername(username);
         Tenant tenant = tenantRepository.findById(tenantId)
                 .orElseThrow(() -> new AppException(ErrorCode.TENANT_NOT_FOUND));
@@ -220,8 +229,38 @@ public class OrderServiceImpl implements OrderService {
         return orders.stream()
                 .map(this::toFullOrderResponse)
                 .collect(Collectors.toList());
+    }
 
+    @Override
+    public OrderResponse getOrderById(Integer id) {
 
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Order không tồn tại"));
+
+        if ("Deleted".equals(order.getStatus().getOrderStatus())) {
+            throw new RuntimeException("Order đã bị xóa");
+        }
+
+        return toFullOrderResponse(order);
+
+    }
+
+    @Override
+    public List<OrderResponse> getAllOrderTenantStatusPendingApproval(JwtAuthenticationToken jwtToken) {
+        String username = jwtToken.getName();
+        Account account = accountRepository.findByUsername(username)
+                .orElseThrow(() -> new AppException(ErrorCode.ACCOUNT_NOT_FOUND));
+        if (account.getTenant() == null) {
+            throw new AppException(ErrorCode.UNAUTHORIZED); // Chặn CUSTOMER hoặc SUPER_ADMIN
+        }
+        Integer tenantId = accountService.getTenantIdByUsername(username);
+        Tenant tenant = tenantRepository.findById(tenantId)
+                .orElseThrow(() -> new AppException(ErrorCode.TENANT_NOT_FOUND));
+
+        List<Order> orders = orderRepository.findByTable_Tenant_TenantIdAndStatus_OrderStatus(tenantId, OrderStatus.Pending_approval);
+        return orders.stream()
+                .map(this::toFullOrderResponse)
+                .collect(Collectors.toList());
     }
 
     private OrderResponse toFullOrderResponse(Order order) {

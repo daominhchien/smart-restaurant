@@ -24,11 +24,20 @@ import java.util.List;
 public class OrderController {
     OrderService orderService;
 
-    @PreAuthorize("permitAll()")
     @PostMapping("")
     public ApiResponse<OrderResponse> createOrder(
-            @Valid @RequestBody OrderRequest orderRequest,
-            @AuthenticationPrincipal(errorOnInvalidType = false) JwtAuthenticationToken jwtToken) {
+            @Valid @RequestBody OrderRequest orderRequest) {
+
+        Authentication auth = SecurityContextHolder
+                .getContext()
+                .getAuthentication();
+
+        JwtAuthenticationToken jwtToken =
+                (auth instanceof JwtAuthenticationToken)
+                        ? (JwtAuthenticationToken) auth
+                        : null;
+
+        System.out.println("🔍 JWT Token: " + (jwtToken != null ? "Có" : "Null"));
 
         // jwtToken sẽ tự động null nếu chưa đăng nhập
         OrderResponse orderResponse = orderService.createOrder(orderRequest, jwtToken);
@@ -39,6 +48,8 @@ public class OrderController {
                 .build();
     }
 
+
+    // Xem tất cả đơn hàng , xem được luôn chi tiết đơn hàng
     @GetMapping("")
     public ApiResponse<List<OrderResponse>> getAllMyOrder(JwtAuthenticationToken jwtToken){
         List<OrderResponse> orderResponse = orderService.getAllMyOrder( jwtToken);
@@ -48,12 +59,33 @@ public class OrderController {
                 .build();
     }
 
+    @GetMapping("/{id}")
+    public ApiResponse<OrderResponse> getOrderById(@PathVariable Integer id){
+        OrderResponse orderResponse = orderService.getOrderById(id);
+        return ApiResponse.<OrderResponse>builder()
+                .result(orderResponse)
+                .message("Get order thành cong")
+                .build();
+    }
+
     @GetMapping("/tenant")
     public ApiResponse<List<OrderResponse>> getAllOrderTenant(JwtAuthenticationToken jwtToken){
-        List<OrderResponse> orderResponse = orderService.getAllTenantOrder( jwtToken);
+        List<OrderResponse> orderResponse = orderService.getAllTenantOrder(jwtToken);
         return ApiResponse.<List<OrderResponse>>builder()
                 .result(orderResponse)
                 .message("Get all order thành cong cua nhà hàng")
+                .build();
+    }
+
+
+    // [STAFF]
+    // [1] - Get all đơn hàng đang chờ xử lý
+    @GetMapping("/pending-approval")
+    public ApiResponse<List<OrderResponse>> getAllOrderTenantStatusPendingApproval(JwtAuthenticationToken jwtToken){
+        List<OrderResponse> orderResponse = orderService.getAllOrderTenantStatusPendingApproval( jwtToken);
+        return ApiResponse.<List<OrderResponse>>builder()
+                .result(orderResponse)
+                .message("Get all Order StatusPendingApproval thành cong cua nhà hàng")
                 .build();
     }
 

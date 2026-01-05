@@ -40,7 +40,8 @@ public class Order {
     @ManyToOne
     @JoinColumn(name = "table_id")
     RestaurantTable table;
-    @OneToOne
+
+    @ManyToOne
     @JoinColumn(name = "status_id")
     Status status;
 
