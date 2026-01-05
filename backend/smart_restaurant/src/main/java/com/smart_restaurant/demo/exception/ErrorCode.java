@@ -48,7 +48,8 @@ public enum ErrorCode {
     USER_NAME_PASSWORD_NOT_NULL("1037","username or password not null",HttpStatus.BAD_REQUEST),
 
     MODIFIER_OPTION_ALREADY_EXISTS("1035","MODIFIER_OPTION_ALREADY_EXISTS", HttpStatus.BAD_REQUEST),
-    MODIFIER_OPTION_NOT_IN_TENANT("1034", "MODIFIER_OPTION_NOT_IN_TENANT", HttpStatus.BAD_REQUEST);
+    MODIFIER_OPTION_NOT_IN_TENANT("1034", "MODIFIER_OPTION_NOT_IN_TENANT", HttpStatus.BAD_REQUEST),
+    MODIFIER_NOT_VALID_FOR_ITEM("1038", "MODIFIER_NOT_VALID_FOR_ITEM", HttpStatus.BAD_REQUEST);
 
     ErrorCode(String code, String message, HttpStatus httpStatusCode) {
         this.code = code;

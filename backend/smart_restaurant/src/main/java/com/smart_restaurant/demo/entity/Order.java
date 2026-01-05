@@ -25,6 +25,9 @@ public class Order {
     Integer orderId;
     @JoinColumn(name = "customer_name")
     String customerName;
+    @JoinColumn(name = "is_have_name")
+    Boolean isHaveName;
+
     String special;
     float subtotal;
     Integer tax;
@@ -44,6 +47,13 @@ public class Order {
 
     @OneToMany(mappedBy = "order",cascade = CascadeType.REMOVE, orphanRemoval = true)
     private List<DetailOrder> detailOrders;
+
+    @ManyToOne
+    @JoinColumn(name = "customerId")
+    Customer customer;
+
+
+
     @OneToOne(mappedBy = "order")
     Payment payments;
 }
