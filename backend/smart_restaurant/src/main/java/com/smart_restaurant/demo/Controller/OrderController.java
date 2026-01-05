@@ -10,10 +10,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/orders")
@@ -30,4 +29,24 @@ public class OrderController {
                 .message("Tạo order thành cong")
                 .build();
     }
+
+    @GetMapping("")
+    public ApiResponse<List<OrderResponse>> getAllOrder(JwtAuthenticationToken jwtToken){
+        List<OrderResponse> orderResponse = orderService.getAllOrder( jwtToken);
+        return ApiResponse.<List<OrderResponse>>builder()
+                .result(orderResponse)
+                .message("Get all order thành cong")
+                .build();
+    }
+
+    @GetMapping("/tenant")
+    public ApiResponse<List<OrderResponse>> getAllOrderTenant(JwtAuthenticationToken jwtToken){
+        List<OrderResponse> orderResponse = orderService.getAllTenantOrder( jwtToken);
+        return ApiResponse.<List<OrderResponse>>builder()
+                .result(orderResponse)
+                .message("Get all order thành cong cua nhà hàng")
+                .build();
+    }
+
+
 }
