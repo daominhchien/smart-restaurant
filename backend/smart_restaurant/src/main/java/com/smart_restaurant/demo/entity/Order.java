@@ -23,6 +23,7 @@ public class Order {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Integer orderId;
+
     @Column(name = "customer_name")
     String customerName;
     @JoinColumn(name = "is_have_name")
@@ -43,7 +44,8 @@ public class Order {
     @ManyToOne
     @JoinColumn(name = "table_id")
     RestaurantTable table;
-    @OneToOne
+
+    @ManyToOne
     @JoinColumn(name = "status_id")
     Status status;
 
