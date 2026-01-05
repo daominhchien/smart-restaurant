@@ -3,6 +3,7 @@ package com.smart_restaurant.demo.Controller;
 import com.smart_restaurant.demo.Service.OrderService;
 import com.smart_restaurant.demo.dto.Request.OrderRequest;
 import com.smart_restaurant.demo.dto.Response.ApiResponse;
+import com.smart_restaurant.demo.dto.Response.InvoiceResponse;
 import com.smart_restaurant.demo.dto.Response.OrderResponse;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
@@ -10,12 +11,20 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/orders")
@@ -78,6 +87,7 @@ public class OrderController {
     }
 
 
+
     // [STAFF]
     // [1] - Get all đơn hàng đang chờ xử lý
     @GetMapping("/pending-approval")
@@ -89,5 +99,26 @@ public class OrderController {
                 .build();
     }
 
+//    @PostMapping("")Q
+//    public ApiResponse<OrderResponse> createOrder()
+    @PostMapping("/{orderId}")
+    public ApiResponse<InvoiceResponse>createInvoice(@PathVariable Integer orderId,JwtAuthenticationToken jwtAuthenticationToken){
+        return ApiResponse.<InvoiceResponse>builder()
+                .result(orderService.createInvoice(orderId,jwtAuthenticationToken))
+                .build();
+    }
+    @GetMapping("/{orderId}/invoice/pdf")
+    public ResponseEntity<byte[]> exportInvoicePdf(
+            @PathVariable Integer orderId,
+            JwtAuthenticationToken jwtAuthenticationToken
+    ) {
+        byte[] pdfBytes = orderService.generateInvoicePdf(orderId, jwtAuthenticationToken);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=invoice_" + orderId + ".pdf")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdfBytes);
+    }
 
 }
