@@ -52,7 +52,7 @@ public enum ErrorCode {
     MODIFIER_NOT_VALID_FOR_ITEM("1038", "MODIFIER_NOT_VALID_FOR_ITEM", HttpStatus.BAD_REQUEST),
     TABLE_ALREADY_HAS_ORDER("1039", "TABLE_ALREADY_HAS_ORDER", HttpStatus.BAD_REQUEST),
     ORDER_NOT_EXISTED("1035","order not existed",HttpStatus.BAD_REQUEST),
-    MODIFIER_NOT_VALID_FOR_ITEM("1038", "MODIFIER_NOT_VALID_FOR_ITEM", HttpStatus.BAD_REQUEST);
+    ;
 
     ErrorCode(String code, String message, HttpStatus httpStatusCode) {
         this.code = code;
