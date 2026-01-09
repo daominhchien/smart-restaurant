@@ -53,6 +53,7 @@ public enum ErrorCode {
     TABLE_ALREADY_HAS_ORDER("1039", "TABLE_ALREADY_HAS_ORDER", HttpStatus.BAD_REQUEST),
 
     ORDER_NOT_EXISTED("1035","order not existed",HttpStatus.BAD_REQUEST),
+
     MODIFIER_NOT_VALID_FOR_ITEM("1038", "MODIFIER_NOT_VALID_FOR_ITEM", HttpStatus.BAD_REQUEST),
 
     ORDER_NOT_FOUND("1040", "ORDER_NOT_FOUND", HttpStatus.BAD_REQUEST),
@@ -69,6 +70,7 @@ public enum ErrorCode {
     CANNOT_REMOVE_ITEMS("4003", "Không thể xóa items khỏi order. Chỉ có thể thêm items mới.", HttpStatus.BAD_REQUEST),
     MODIFIER_NOT_FOUND("4004", "MODIFIER_NOT_FOUND)", HttpStatus.BAD_REQUEST),
     ORDER_UPDATE_FAILED("4005", "ORDER_UPDATE_FAILED", HttpStatus.BAD_REQUEST);
+    ;
 
 
     ErrorCode(String code, String message, HttpStatus httpStatusCode) {
