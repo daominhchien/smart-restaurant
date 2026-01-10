@@ -41,13 +41,12 @@ export default function LoginModal({
 
       // 🔐 LƯU GIỐNG LOGIN PAGE
       localStorage.setItem("token", accessToken);
-      localStorage.setItem("userName", userName);
+      sessionStorage.setItem("userName", userName);
 
       // 🔄 CẬP NHẬT AUTH CONTEXT
       await login(accessToken);
 
       const role = localStorage.getItem("role");
-      console.log(role);
 
       onClose();
       onSuccess?.();

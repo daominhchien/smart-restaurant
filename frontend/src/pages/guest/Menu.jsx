@@ -29,6 +29,9 @@ export default function Menu() {
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [userName, setUserName] = useState(() =>
+    sessionStorage.getItem("userName")
+  );
 
   /* ================= CART (SAFE INIT) ================= */
   const [cart, setCart] = useState(() => {
@@ -53,6 +56,23 @@ export default function Menu() {
   const queryParams = new URLSearchParams(location.search);
   const accessToken = queryParams.get("accessToken");
   /* ================= FETCH ================= */
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const storedName = sessionStorage.getItem("userName");
+      setUserName(storedName);
+    };
+
+    // Lắng nghe sự thay đổi sessionStorage
+    window.addEventListener("storage", handleStorageChange);
+
+    // Cập nhật lại khi modal đóng (ví dụ reload nội bộ)
+    handleStorageChange();
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+    };
+  }, []);
+
   useEffect(() => {
     // ✅ Nếu token có trong URL → cập nhật vào AuthContext
     if (accessToken) {
@@ -81,6 +101,11 @@ export default function Menu() {
   const fetchModifierGroups = async () => {
     const res = await modifierGroupApi.getAll();
     setModifierGroups(res?.result || []);
+  };
+
+  const handleLoginSuccess = () => {
+    const storedName = sessionStorage.getItem("userName");
+    setUserName(storedName);
   };
 
   /* ================= CART STORAGE ================= */
@@ -209,73 +234,84 @@ export default function Menu() {
             </div>
 
             {/* ACTIONS */}
-            <div
-              className="
-    grid grid-cols-2 gap-2
-    sm:flex sm:gap-3 sm:justify-end
-  "
-            >
+            <div className="flex flex-wrap justify-end items-center gap-2 sm:gap-3">
               {/* HISTORY */}
               <button
                 onClick={() => setIsHistoryOpen(true)}
-                className="
-      flex items-center justify-center gap-2
-      px-3 py-2 rounded-xl
-      bg-gray-100 hover:bg-gray-200
-      transition text-xs sm:text-sm font-medium
-    "
+                className="flex items-center gap-2 px-3.5 py-2 rounded-xl 
+               bg-gray-100 hover:bg-gray-200 
+               text-gray-700 text-sm font-medium transition"
               >
-                <History size={18} />
-                Lịch sử
+                <History size={18} className="text-gray-500" />
+                <span>Lịch sử</span>
               </button>
 
-              {/* LOGIN */}
-              <button
-                onClick={() => setIsLoginOpen(true)}
-                className="
-      flex items-center justify-center gap-2
-      px-3 py-2 rounded-xl
-      bg-white border border-gray-300 hover:bg-gray-100
-      transition text-xs sm:text-sm font-medium text-gray-700
-    "
-              >
-                Đăng nhập
-              </button>
+              {/* USER / AUTH */}
+              {userName ? (
+                <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl border border-green-200 bg-green-50 text-green-700">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 flex items-center justify-center rounded-full bg-green-100 text-green-600 font-semibold text-xs">
+                      {userName.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="font-medium text-sm sm:text-base">
+                      {userName}
+                    </span>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      try {
+                        await authApi.logout(); // 🔐 gọi API logout thực sự
+                      } catch (err) {
+                        console.warn("Logout API failed:", err);
+                      } finally {
+                        // Dọn dữ liệu local
+                        sessionStorage.removeItem("userName");
+                        localStorage.removeItem("token");
+                        setUserName(null);
+                      }
+                    }}
+                    className="ml-2 text-xs text-red-600 hover:bg-red-100 font-medium cursor-pointer p-1 rounded-lg"
+                  >
+                    Đăng xuất
+                  </button>
+                </div>
+              ) : (
+                <>
+                  {/* LOGIN */}
+                  <button
+                    onClick={() => setIsLoginOpen(true)}
+                    className="flex items-center gap-2 px-3.5 py-2 rounded-xl 
+                   bg-white border border-gray-300 
+                   hover:bg-gray-100 text-gray-700 text-sm font-medium transition"
+                  >
+                    <span>Đăng nhập</span>
+                  </button>
 
-              {/* REGISTER */}
-              <button
-                onClick={() => setIsRegisterOpen(true)}
-                className="
-      flex items-center justify-center gap-2
-      px-3 py-2 rounded-xl
-      bg-green-500 hover:bg-green-600
-      transition text-white text-xs sm:text-sm font-medium
-    "
-              >
-                Đăng ký
-              </button>
+                  {/* REGISTER */}
+                  <button
+                    onClick={() => setIsRegisterOpen(true)}
+                    className="flex items-center gap-2 px-3.5 py-2 rounded-xl 
+                   bg-green-600 hover:bg-green-700 
+                   text-white text-sm font-medium transition"
+                  >
+                    <span>Đăng ký</span>
+                  </button>
+                </>
+              )}
 
               {/* CART */}
               <button
                 onClick={() => setIsCartOpen(true)}
-                className="
-      relative flex items-center justify-center gap-2
-      px-3 py-2 rounded-xl
-      bg-blue-600 hover:bg-blue-700
-      transition text-white text-xs sm:text-sm font-medium
-    "
+                className="relative flex items-center gap-2 px-3.5 py-2 rounded-xl 
+               bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition"
               >
                 <ShoppingCart size={18} />
-                Giỏ hàng
+                <span>Giỏ hàng</span>
+
                 {getTotalItems() > 0 && (
                   <span
-                    className="
-          absolute -top-2 -right-2
-          bg-red-500 text-white
-          text-[10px] sm:text-xs font-semibold
-          rounded-full w-5 h-5 sm:w-6 sm:h-6
-          flex items-center justify-center shadow
-        "
+                    className="absolute -top-1.5 -right-1.5 bg-red-500 text-white 
+                   text-[10px] font-semibold rounded-full w-5 h-5 flex items-center justify-center shadow"
                   >
                     {getTotalItems()}
                   </span>
@@ -382,6 +418,7 @@ export default function Menu() {
           tenantId={tenantId}
           onSuccess={() => {
             setIsLoginOpen(false);
+            handleLoginSuccess();
             // có thể fetch lại user / cart nếu cần
           }}
           onRegisterModal={() => {
