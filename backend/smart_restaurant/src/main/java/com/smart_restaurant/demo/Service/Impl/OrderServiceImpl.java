@@ -698,7 +698,7 @@ public class OrderServiceImpl implements OrderService {
         return response;
     }
 
-    private List<DetailOrderResponse> toDetailOrderResponses(List<DetailOrder> detailOrders) {
+    private List<DetailOrderResponse>toDetailOrderResponses(List<DetailOrder> detailOrders) {
         return detailOrders.stream()
                 .map(detail -> {
                     DetailOrderResponse detailResponse = detailOrderMapper.toDetailOrderResponse(detail);

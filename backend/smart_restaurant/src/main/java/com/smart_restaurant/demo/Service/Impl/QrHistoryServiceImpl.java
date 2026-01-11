@@ -9,6 +9,7 @@ import com.google.zxing.qrcode.QRCodeWriter;
 import com.smart_restaurant.demo.Repository.AccountRepository;
 import com.smart_restaurant.demo.Repository.QrHistoryRepository;
 import com.smart_restaurant.demo.Repository.TableRepository;
+import com.smart_restaurant.demo.Service.AuthenticationService;
 import com.smart_restaurant.demo.Service.QrHistoryService;
 import com.smart_restaurant.demo.Service.TableService;
 import com.smart_restaurant.demo.Service.TenantService;
@@ -18,6 +19,7 @@ import com.smart_restaurant.demo.dto.Response.TableResponseActive;
 import com.smart_restaurant.demo.entity.Account;
 import com.smart_restaurant.demo.entity.QrHistory;
 import com.smart_restaurant.demo.entity.RestaurantTable;
+import com.smart_restaurant.demo.entity.Role;
 import com.smart_restaurant.demo.exception.AppException;
 import com.smart_restaurant.demo.exception.ErrorCode;
 import com.smart_restaurant.demo.mapper.QrHistoryMapper;
@@ -27,6 +29,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Service;
@@ -37,6 +40,7 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -71,7 +75,7 @@ public class QrHistoryServiceImpl implements QrHistoryService {
     QrHistoryMapper qrHistoryMapper;
     AccountRepository accountRepository;
     TableService tableService;
-
+    AuthenticationService authenticationService;
 
 
 
@@ -155,16 +159,38 @@ public class QrHistoryServiceImpl implements QrHistoryService {
         return valid;
 
     }
-    public void verify(String token, HttpServletResponse response) throws NoSuchAlgorithmException, InvalidKeyException, IOException {
+
+
+    public void verify(String token, HttpServletResponse response)
+            throws NoSuchAlgorithmException, InvalidKeyException, IOException {
         boolean ok = verifyTableQRCode(token);
         String[] parts = token.split("\\.");
-        if (parts.length != 4) throw new AppException(ErrorCode.INVALID_TOKEN_FORMAT);
+        if (parts.length != 4)
+            throw new AppException(ErrorCode.INVALID_TOKEN_FORMAT);
 
         Integer tenantId = Integer.parseInt(parts[0]);
         Integer tableId = Integer.parseInt(parts[1]);
-        String redirectUrl = ok ? "http://localhost:5173/guest/menu/"+tenantId+"/tables/"+tableId : "http://localhost:5173/qr/error";
+
+        if (!ok) {
+            response.sendRedirect("http://localhost:5173/qr/error");
+            return;
+        }
+        Account account=accountRepository.findByTenant_TenantId(tenantId).orElseThrow(()->new AppException(ErrorCode.ACCOUNT_EXISTED));
+
+        String accessToken = authenticationService.generalToken(account);
+
+        // ✅ Gửi token qua URL param
+        String redirectUrl = String.format(
+                "http://localhost:5173/guest/menu/%d/tables/%d?accessToken=%s",
+                tenantId,
+                tableId,
+                URLEncoder.encode(accessToken, StandardCharsets.UTF_8)
+        );
+
         response.sendRedirect(redirectUrl);
     }
+
+
 
     @Override
     public List<QrResponse> getAllTableQRCode(JwtAuthenticationToken jwtAuthenticationToken) {
