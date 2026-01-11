@@ -81,8 +81,7 @@ export default function Menu() {
     // 1️⃣ Lưu token
     localStorage.setItem("token", accessToken);
 
-    // 2️⃣ Set auth (decode + set axios header)
-    setAuthFromToken(accessToken);
+    console.log(localStorage.getItem("token");
 
     // 3️⃣ 🔥 XÓA TOKEN KHỎI URL NGAY
     window.history.replaceState({}, document.title, window.location.pathname);
