@@ -55,6 +55,8 @@ export default function Menu() {
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const accessToken = queryParams.get("accessToken");
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
   /* ================= FETCH ================= */
   useEffect(() => {
     const handleStorageChange = () => {
@@ -74,19 +76,23 @@ export default function Menu() {
   }, []);
 
   useEffect(() => {
-    // ✅ Nếu token có trong URL → cập nhật vào AuthContext
-    if (accessToken) {
-      setAuthFromToken(accessToken);
-      localStorage.setItem("token", accessToken);
-    }
+    if (!accessToken) return;
 
-    // ✅ Khi token đã có → fetch data
-    if (accessToken) {
-      fetchCategories();
-      fetchItems();
-      fetchModifierGroups();
-    }
+    // 1️⃣ Lưu token
+    localStorage.setItem("token", accessToken);
+
+    // 2️⃣ Set auth (decode + set axios header)
+    setAuthFromToken(accessToken);
+
+    // 3️⃣ 🔥 XÓA TOKEN KHỎI URL NGAY
+    window.history.replaceState({}, document.title, window.location.pathname);
   }, [accessToken]);
+
+  useEffect(() => {
+    fetchCategories();
+    fetchItems();
+    fetchModifierGroups();
+  }, [isAuthenticated]);
 
   const fetchCategories = async () => {
     const res = await categoryApi.getAllCategories();
