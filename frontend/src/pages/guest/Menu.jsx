@@ -50,7 +50,6 @@ export default function Menu() {
   const [selectedItem, setSelectedItem] = useState(null);
   const [isModifierOpen, setIsModifierOpen] = useState(false);
 
-  const { setAuthFromToken } = useContext(AuthContext); // 👈 lấy hàm này
   const { tenantId, tableId } = useParams();
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
@@ -64,10 +63,8 @@ export default function Menu() {
       setUserName(storedName);
     };
 
-    // Lắng nghe sự thay đổi sessionStorage
     window.addEventListener("storage", handleStorageChange);
 
-    // Cập nhật lại khi modal đóng (ví dụ reload nội bộ)
     handleStorageChange();
 
     return () => {
@@ -78,12 +75,10 @@ export default function Menu() {
   useEffect(() => {
     if (!accessToken) return;
 
-    // 1️⃣ Lưu token
     localStorage.setItem("token", accessToken);
 
     console.log(localStorage.getItem("token"));
 
-    // 3️⃣ 🔥 XÓA TOKEN KHỎI URL NGAY
     window.history.replaceState({}, document.title, window.location.pathname);
   }, [accessToken]);
 
