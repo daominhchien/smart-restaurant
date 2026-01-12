@@ -13,8 +13,6 @@ public interface ReviewService {
     List<ReviewResponse> getAllReviewIsTenant(JwtAuthenticationToken jwtAuthenticationToken);
     ReviewResponse updateStatusReview(Integer reviewId, UpdateStatusReview updateStatusReview, JwtAuthenticationToken jwtAuthenticationToken);
 
-    ReviewResponse deleteReview(Integer reviewId, JwtAuthenticationToken jwtAuthenticationToken);
-    ReviewResponse deleteReviewByTent(Integer reviewId);
     ReviewResponse createReview(Integer customerId, ReviewRequest reviewRequest);
 
 }
