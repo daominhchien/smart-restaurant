@@ -1,6 +1,11 @@
 package com.smart_restaurant.demo.Service.Impl;
 
 
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.JsonFactory;
+import com.google.api.client.json.gson.GsonFactory;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.MACVerifier;
@@ -8,15 +13,19 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.smart_restaurant.demo.Repository.AccountRepository;
 import com.smart_restaurant.demo.Repository.InvalidatedTokenRepository;
+import com.smart_restaurant.demo.Service.AccountService;
 import com.smart_restaurant.demo.Service.AuthenticationService;
 import com.smart_restaurant.demo.dto.Request.AuthenticateRequest;
 import com.smart_restaurant.demo.dto.Request.IntrospectRequest;
+import com.smart_restaurant.demo.dto.Request.SignupCustomerRequest;
+import com.smart_restaurant.demo.dto.Request.SignupRequest;
 import com.smart_restaurant.demo.dto.Response.AuthenticationResponse;
 import com.smart_restaurant.demo.dto.Response.IntrospectResponse;
 import com.smart_restaurant.demo.entity.Account;
 import com.smart_restaurant.demo.entity.InvalidatedToken;
 import com.smart_restaurant.demo.exception.AppException;
 import com.smart_restaurant.demo.exception.ErrorCode;
+import jakarta.mail.MessagingException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -36,6 +45,7 @@ import org.springframework.util.CollectionUtils;
 import java.text.ParseException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Collections;
 import java.util.Date;
 import java.util.StringJoiner;
 import java.util.UUID;
@@ -57,11 +67,19 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     @NonFinal
     @Value("${jwt.refresh-token-validity-seconds}")
     protected long REFRESHABLE_DURATION;
+    @NonFinal
+    @Value("${google.client-id}")
+    private String googleClientId;
+     AccountServiceImpl accountService;
 
     @Override
     public AuthenticationResponse authenticate(AuthenticateRequest authenticateRequest, HttpServletResponse response) {
          Account account=accountRepository.findByUsername(authenticateRequest.getUserName())
                 .orElseThrow(() ->new AppException(ErrorCode.ACCOUNT_NOT_EXITS));
+         if(account.getIsFirstActivity())
+             throw new AppException(ErrorCode.EMAIL_NOT_VERIFY);
+
+
         PasswordEncoder passwordEncoder= new BCryptPasswordEncoder(10);
         boolean authenticated=passwordEncoder.matches(authenticateRequest.getPassword(),account.getPassword());
         log.warn("Raw pw = " + authenticateRequest.getPassword());
@@ -249,5 +267,78 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 .acessToken(newAccessToken)
                 .build();
 
+    }
+
+
+
+
+
+
+    private GoogleIdToken.Payload verifyGoogleToken(String token) {
+        try {
+            NetHttpTransport transport = new NetHttpTransport();
+            JsonFactory jsonFactory = GsonFactory.getDefaultInstance();
+
+            GoogleIdTokenVerifier verifier =
+                    new GoogleIdTokenVerifier.Builder(transport, jsonFactory)
+                            .setAudience(Collections.singletonList(googleClientId))
+                            .build();
+
+            GoogleIdToken idToken = verifier.verify(token);
+            if (idToken == null) {
+                System.out.println("Token verification failed. Audience in token: " + token);
+                throw new RuntimeException("Google token verification failed");
+            }
+            System.out.println("id token: " + idToken);
+
+
+            if (idToken == null) {
+                throw new RuntimeException("Invalid Google token");
+            }
+
+            return idToken.getPayload();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Google token verification failed", e);
+        }
+    }
+
+    @Override
+    public AuthenticationResponse loginWithGoogle(String googleToken,Integer tenantId) {
+
+        // 1. verify token google
+        GoogleIdToken.Payload payload = verifyGoogleToken(googleToken);
+
+        // 2. lấy thông tin user
+        String email = payload.getEmail();
+        String name  = (String) payload.get("name");
+
+        // 3. tìm hoặc tạo user
+        Account account = accountRepository.findByUsername(email)
+                .orElseGet(() -> {
+                    try {
+                        return createAccount(email, tenantId);
+                    } catch (MessagingException e) {
+                        throw new RuntimeException(e);
+                    } catch (JOSEException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+
+        // 4. generate JWT hệ thống
+        String accessToken = generalToken(account);
+        AuthenticationResponse authenticationResponse= AuthenticationResponse.builder()
+                .acessToken(accessToken)
+                .isFirstActivity(account.getIsFirstActivity())
+                .build();
+
+        return authenticationResponse;
+    }
+    Account createAccount(String email,Integer tenantId) throws MessagingException, JOSEException {
+        SignupCustomerRequest signupRequest=SignupCustomerRequest.builder().username(email).password("admin123").build();
+        accountService.createAccountCustomer(signupRequest,tenantId);
+        Account account=accountRepository.findByUsername(email).orElseThrow(()-> new AppException(ErrorCode.ACCOUNT_NOT_EXITS));
+        account.setIsEmailVerify(true);
+        return  accountRepository.save(account);
     }
 }

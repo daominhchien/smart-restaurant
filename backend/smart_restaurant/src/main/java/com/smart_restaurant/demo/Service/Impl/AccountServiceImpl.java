@@ -92,12 +92,7 @@ public class AccountServiceImpl implements AccountService {
             System.out.println("email loi ");
             throw new AppException(ErrorCode.JWT_ERROR);
         }
-        Customer customer= customerMapper.toCustomer(signupRequest);
-        System.out.println("Gender from request = " + signupRequest.getGender());
-        Account account=accountRepository.save(newAccount);
-        customer.setAccount(account);
-        customerRepository.save(customer);
-        return accountMapper.toSignupResponse(account);
+        return accountMapper.toSignupResponse(accountRepository.save(newAccount));
     }
 
     @Override
