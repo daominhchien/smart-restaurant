@@ -153,6 +153,17 @@ function Dashboard() {
     }
   };
 
+  const handleReciveAndServing = async (orderId) => {
+    try {
+      await orderApi.updateStatus(orderId, { status: "Serving" });
+      toast.success("Đang tiến hành phục vụ đơn hàng");
+      onServing();
+    } catch (err) {
+      console.error("Lỗi cập nhật trạng thái:", err);
+      setError("Không thể cập nhật trạng thái đơn hàng");
+    }
+  };
+
   const handleOrderClick = (order) => {
     clearNewOrder(order.orderId);
     setSelectedOrder(order);
@@ -353,6 +364,7 @@ function Dashboard() {
           onClose={() => setSelectedOrder(null)}
           onApprove={handleApprove}
           onReject={handleReject}
+          onServing={handleReciveAndServing}
           processing={processing}
         />
       )}

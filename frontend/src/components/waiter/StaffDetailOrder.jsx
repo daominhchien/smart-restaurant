@@ -7,10 +7,13 @@ import {
   User,
   Utensils,
   AlertCircle,
+  HandPlatter,
 } from "lucide-react";
 import { STATUS_META } from "../../utils/statusMeta";
 import { getTableNameById } from "../../utils/tableUtils";
 import Overlay from "../common/Overlay";
+import orderApi from "../../api/orderApi";
+import toast from "react-hot-toast";
 
 const calcItemTotal = (item) => {
   const modifierTotal =
@@ -18,7 +21,14 @@ const calcItemTotal = (item) => {
   return (item.price + modifierTotal) * item.quantity;
 };
 
-function StaffDetailOrder({ order, onClose, onApprove, onReject, processing }) {
+function StaffDetailOrder({
+  order,
+  onClose,
+  onApprove,
+  onReject,
+  onServing,
+  processing,
+}) {
   const [tableName, setTableName] = useState("");
 
   if (!order) return null;
@@ -214,10 +224,28 @@ function StaffDetailOrder({ order, onClose, onApprove, onReject, processing }) {
             <button
               onClick={() => onApprove(order.orderId)}
               disabled={processing}
-              className="flex-1 flex items-center justify-center gap-2 px-6 py-3 text-white font-semibold bg-linear-to-r from-blue-600 to-blue-700 rounded-lg transition-all duration-200 hover:from-blue-700 hover:to-blue-800 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+              className="flex-1 flex items-center justify-center gap-2 px-6 py-3 text-white font-semibold 
+              bg-linear-to-r from-blue-600 to-blue-700 rounded-lg transition-all duration-200 hover:from-blue-700 hover:to-blue-800 
+              hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
             >
               <Check size={20} strokeWidth={2.5} />
               {processing ? "Đang xử lý..." : "Chấp nhận"}
+            </button>
+          </div>
+        )}
+
+        {/* ===== COOKED ===== */}
+        {order.oderStatus === "Cooked" && (
+          <div className="p-6 bg-white border-t border-emerald-100">
+            <button
+              onClick={() => onServing(order.orderId)}
+              disabled={processing}
+              className="w-full flex items-center justify-center gap-2 px-6 py-3 text-white font-semibold 
+              bg-linear-to-r from-emerald-600 to-emerald-700 rounded-lg transition-all duration-200 hover:from-emerald-700 hover:to-emerald-800 
+              hover:-translate-y-0.5 hover:shadow-lg hover:shadow-emerald-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <HandPlatter size={20} strokeWidth={2.5} />
+              {processing ? "Đang xử lý..." : "Nhận món và phục vụ"}
             </button>
           </div>
         )}
