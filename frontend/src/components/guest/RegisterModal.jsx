@@ -55,6 +55,7 @@ export default function RegisterModal({
       onClose();
     } catch (err) {
       setError("Đăng ký thất bại, vui lòng thử lại");
+      console.error(err);
     } finally {
       setLoading(false);
     }
