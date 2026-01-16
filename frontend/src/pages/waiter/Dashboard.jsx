@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import {
   Bell,
   UtensilsCrossed,
@@ -12,13 +12,12 @@ import {
   User,
   X,
 } from "lucide-react";
-import { Client } from "@stomp/stompjs";
-import SockJS from "sockjs-client";
 import { useNavigate } from "react-router-dom";
 import authApi from "../../api/authApi";
 import StaffDetailOrder from "../../components/waiter/StaffDetailOrder";
 import tenantApi from "../../api/tenantApi";
 import orderApi from "../../api/orderApi";
+import useOrderWebSocket from "../../hooks/useOrderWebSocket";
 
 /* ===== STATUS CONFIG ===== */
 const STATUS_META = {
@@ -71,34 +70,32 @@ function Dashboard() {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [processing, setProcessing] = useState(false);
   const [tenant, setTenant] = useState(null);
-
-  // Thông báo mới
-  const [notifications, setNotifications] = useState([]);
-  const [newOrderIds, setNewOrderIds] = useState(new Set());
-
-  const wsRef = useRef(null);
   const [userName, setUserName] = useState("");
+
   const navigate = useNavigate();
 
+  /* ===== USER ===== */
   useEffect(() => {
     const storedUserName = localStorage.getItem("userName");
-    if (storedUserName) {
-      setUserName(storedUserName);
-    }
+    if (storedUserName) setUserName(storedUserName);
   }, []);
 
-  /* ===== INIT ===== */
+  /* ===== INIT DATA ===== */
   useEffect(() => {
     fetchTenantProfile();
     fetchOrders();
-    connectWebSocket();
-
-    return () => {
-      if (wsRef.current) wsRef.current.deactivate();
-    };
   }, []);
 
-  /* ===== TENANT ===== */
+  /* ===== WEBSOCKET (HOOK) ===== */
+  const { notifications, newOrderIds, clearNewOrder, removeNotification } =
+    useOrderWebSocket({
+      serverPort: import.meta.env.VITE_SERVER_PORT,
+      onOrderUpdate: (order) => {
+        fetchOrders();
+      },
+    });
+
+  /* ===== API ===== */
   const fetchTenantProfile = async () => {
     try {
       const res = await tenantApi.getTenantProfile();
@@ -108,12 +105,16 @@ function Dashboard() {
     }
   };
 
-  /* ===== ORDERS FROM API ===== */
   const fetchOrders = async () => {
     setLoading(true);
     try {
       const res = await orderApi.tenantGetAllOrder();
-      setOrders(res.result || []);
+
+      const sorted = (res.result || []).sort(
+        (a, b) => new Date(b.createAt) - new Date(a.createAt)
+      );
+
+      setOrders(sorted);
     } catch (err) {
       console.error("Get orders error:", err);
     } finally {
@@ -121,65 +122,40 @@ function Dashboard() {
     }
   };
 
-  /* ===== WEBSOCKET ===== */
-  const connectWebSocket = () => {
-    const socket = new SockJS(
-      `http://localhost:${import.meta.env.VITE_SERVER_PORT}/ws`
-    );
-
-    const stompClient = new Client({
-      webSocketFactory: () => socket,
-      reconnectDelay: 5000,
-      heartbeatIncoming: 4000,
-      heartbeatOutgoing: 4000,
-    });
-
-    stompClient.onConnect = () => {
-      stompClient.subscribe("/topic/orders", (message) => {
-        const order = JSON.parse(message.body);
-        console.log("Received order update via WebSocket:", order);
-        handleNewOrder(order);
-      });
-    };
-
-    stompClient.activate();
-    wsRef.current = stompClient;
+  /* ===== ACTIONS ===== */
+  const handleApprove = async (orderId) => {
+    setProcessing(true);
+    try {
+      await orderApi.updateStatus(orderId, { status: "Approved" });
+      setSelectedOrder(null);
+      clearNewOrder(orderId);
+      fetchOrders();
+    } catch (err) {
+      console.error("Approve order error:", err);
+      alert("Duyệt đơn thất bại");
+    } finally {
+      setProcessing(false);
+    }
   };
 
-  const handleNewOrder = (order) => {
-    // Thêm thông báo nếu có message
-    if (order.message) {
-      const notification = {
-        id: Date.now(),
-        orderId: order.orderId,
-        tableId: order.tableId,
-        message: order.message,
-        timestamp: new Date(),
-      };
-
-      setNotifications((prev) => [notification, ...prev]);
-
-      // Đánh dấu đơn hàng mới
-      setNewOrderIds((prev) => new Set([...prev, order.orderId]));
-
-      // Tự động xóa thông báo sau 10 giây
-      setTimeout(() => {
-        setNotifications((prev) =>
-          prev.filter((n) => n.id !== notification.id)
-        );
-      }, 10000);
+  const handleReject = async (orderId) => {
+    setProcessing(true);
+    try {
+      await orderApi.updateStatus(orderId, { status: "Rejected" });
+      setSelectedOrder(null);
+      clearNewOrder(orderId);
+      fetchOrders();
+    } catch (err) {
+      console.error("Reject order error:", err);
+      alert("Từ chối đơn thất bại");
+    } finally {
+      setProcessing(false);
     }
+  };
 
-    // Cập nhật danh sách đơn hàng
-    setOrders((prev) => {
-      const index = prev.findIndex((o) => o.orderId === order.orderId);
-      if (index !== -1) {
-        const updated = [...prev];
-        updated[index] = order;
-        return updated;
-      }
-      return [order, ...prev];
-    });
+  const handleOrderClick = (order) => {
+    clearNewOrder(order.orderId);
+    setSelectedOrder(order);
   };
 
   const handleLogout = async () => {
@@ -194,65 +170,6 @@ function Dashboard() {
     }
   };
 
-  /* ===== ACTIONS ===== */
-  const handleApprove = async (orderId) => {
-    setProcessing(true);
-    try {
-      const res = await orderApi.updateStatus(orderId, {
-        status: "Approved",
-      });
-
-      setSelectedOrder(null);
-      fetchOrders();
-
-      // Xóa đánh dấu "mới"
-      setNewOrderIds((prev) => {
-        const newSet = new Set(prev);
-        newSet.delete(orderId);
-        return newSet;
-      });
-    } catch (err) {
-      console.error("Approve order error:", err);
-      alert("Duyệt đơn thất bại");
-    } finally {
-      setProcessing(false);
-    }
-  };
-
-  const handleReject = async (orderId) => {
-    setProcessing(true);
-    try {
-      const res = await orderApi.updateStatus(orderId, {
-        status: "Rejected",
-      });
-
-      setSelectedOrder(null);
-      fetchOrders();
-
-      // Xóa đánh dấu "mới"
-      setNewOrderIds((prev) => {
-        const newSet = new Set(prev);
-        newSet.delete(orderId);
-        return newSet;
-      });
-    } catch (err) {
-      console.error("Reject order error:", err);
-      alert("Từ chối đơn thất bại");
-    } finally {
-      setProcessing(false);
-    }
-  };
-
-  const handleOrderClick = (order) => {
-    // Xóa đánh dấu "mới" khi click vào đơn
-    setNewOrderIds((prev) => {
-      const newSet = new Set(prev);
-      newSet.delete(order.orderId);
-      return newSet;
-    });
-    setSelectedOrder(order);
-  };
-
   /* ===== FILTER ===== */
   const filteredOrders =
     statusFilter === "ALL"
@@ -265,51 +182,51 @@ function Dashboard() {
   /* ===== UI ===== */
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100">
-      <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
+      <div className="mx-auto px-4 py-8 max-w-7xl space-y-6">
         {/* ===== HEADER ===== */}
-        <div className="bg-white rounded-3xl shadow p-4 sm:p-6">
-          <div className="flex flex-col gap-4 lg:flex-row lg:justify-between lg:items-center">
-            <div className="flex items-start sm:items-center gap-4">
-              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl overflow-hidden bg-slate-100 shrink-0">
+        <div className="p-4 bg-white rounded-3xl shadow sm:p-6">
+          <div className="flex flex-col justify-between items-center gap-4 lg:flex-row">
+            <div className="flex items-start gap-4 sm:items-center">
+              <div className="overflow-hidden w-14 h-14 bg-slate-100 rounded-2xl shrink-0 sm:w-16">
                 {tenant?.logoUrl ? (
                   <img
                     src={tenant.logoUrl}
                     alt={tenant.nameTenant}
-                    className="w-full h-full object-cover"
+                    className="object-cover w-full h-full"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-linear-to-br from-indigo-500 to-indigo-600 text-white">
-                    <UtensilsCrossed size={28} className="sm:size-8" />
+                  <div className="flex items-center justify-center w-full h-full text-white bg-linear-to-br from-indigo-500 to-indigo-600">
+                    <UtensilsCrossed size={28} />
                   </div>
                 )}
               </div>
 
               <div className="space-y-1">
-                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold leading-tight">
+                <h1 className="text-xl font-bold sm:text-2xl lg:text-3xl">
                   {tenant?.nameTenant || "Dashboard Staff"}
                 </h1>
-                <p className="text-sm sm:text-base text-slate-500">
+                <p className="text-sm text-slate-500">
                   Theo dõi đơn hàng realtime
                 </p>
                 {tenant && (
-                  <p className="text-xs sm:text-sm text-slate-400 flex items-center gap-1">
-                    <Clock3 size={14} className="sm:size-4" />
+                  <p className="flex items-center gap-1 text-xs text-slate-400">
+                    <Clock3 size={14} />
                     {tenant.openHours} – {tenant.closeHours}
                   </p>
                 )}
               </div>
             </div>
 
-            <div className="flex flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
               <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-xl">
-                <User size={16} className="text-slate-600" />
-                <span className="text-sm font-medium text-slate-700">
+                <User size={16} />
+                <span className="text-sm font-medium">
                   {userName || "Staff"}
                 </span>
               </div>
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-1 px-3 py-2 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 transition cursor-pointer"
+                className="flex items-center gap-1 px-3 py-2 text-red-600 bg-red-50 rounded-xl hover:bg-red-100"
               >
                 <LogOut size={16} />
                 <span className="text-sm font-medium">Đăng xuất</span>
@@ -320,27 +237,23 @@ function Dashboard() {
 
         {/* ===== NOTIFICATIONS ===== */}
         {notifications.length > 0 && (
-          <div className="fixed top-4 right-4 z-40 space-y-2 max-w-sm">
+          <div className="z-40 fixed top-4 right-4 max-w-sm space-y-2">
             {notifications.map((notif) => (
               <div
                 key={notif.id}
-                className="bg-linear-to-r from-indigo-500 to-purple-600 text-white rounded-2xl shadow-lg p-4 flex items-start gap-3 animate-slide-in"
+                className="flex items-start gap-3 p-4 text-white bg-linear-to-r from-indigo-500 to-purple-600 rounded-2xl shadow-lg animate-slide-in"
               >
-                <div className="bg-white/20 p-2 rounded-lg">
+                <div className="p-2 bg-white/20 rounded-lg">
                   <Bell size={20} className="animate-bounce" />
                 </div>
                 <div className="flex-1">
                   <p className="font-semibold text-sm">{notif.message}</p>
-                  <p className="text-xs opacity-90 mt-1">
+                  <p className="mt-1 text-xs opacity-90">
                     Vừa xong - Order #{notif.orderId}
                   </p>
                 </div>
                 <button
-                  onClick={() =>
-                    setNotifications((prev) =>
-                      prev.filter((n) => n.id !== notif.id)
-                    )
-                  }
+                  onClick={() => removeNotification(notif.id)}
                   className="text-white/80 hover:text-white"
                 >
                   <X size={18} />
@@ -351,18 +264,18 @@ function Dashboard() {
         )}
 
         {/* ===== STATS ===== */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           {["Pending_approval", "Cooking", "Serving", "Paid"].map((s) => {
             const Icon = STATUS_META[s].icon;
             return (
-              <div key={s} className="bg-white rounded-2xl p-6 shadow">
+              <div key={s} className="p-6 bg-white rounded-2xl shadow">
                 <div className="flex justify-between items-start">
                   <div className={`p-2 rounded-lg ${STATUS_META[s].color}`}>
                     <Icon size={24} />
                   </div>
                   <span className="text-3xl font-bold">{countByStatus(s)}</span>
                 </div>
-                <p className="text-sm text-slate-500 mt-2">
+                <p className="mt-2 text-sm text-slate-500">
                   {STATUS_META[s].label}
                 </p>
               </div>
@@ -389,27 +302,21 @@ function Dashboard() {
                     : "hover:bg-gray-50"
                 }`}
               >
-                {/* Badge "MỚI" */}
                 {isNew && (
-                  <div className="absolute top-3 right-3">
-                    <span className="bg-linear-to-r from-indigo-500 to-purple-600 text-white text-xs font-bold px-3 py-1 rounded-full animate-bounce">
+                  <div className="z-100 absolute top-3 right-3">
+                    <span className="px-3 py-1 text-white text-xs font-bold bg-linear-to-r from-indigo-500 to-purple-600 rounded-full animate-bounce">
                       MỚI
                     </span>
                   </div>
                 )}
 
-                {/* Hiệu ứng sáng cho đơn mới */}
                 {isNew && (
-                  <div className="absolute inset-0 bg-linear-to-r from-indigo-500/5 to-purple-500/5 pointer-events-none"></div>
+                  <div className="absolute inset-0 bg-linear-to-r from-indigo-500/5 to-purple-500/5 pointer-events-none" />
                 )}
 
-                <div className="flex justify-between items-center relative z-10">
+                <div className="z-10 relative flex justify-between items-center">
                   <div className="flex items-center gap-3">
-                    <div
-                      className={`p-2 rounded-lg ${
-                        meta?.color || "bg-gray-100"
-                      }`}
-                    >
+                    <div className={`p-2 rounded-lg ${meta?.color}`}>
                       <Icon size={20} />
                     </div>
                     <div>
@@ -422,11 +329,9 @@ function Dashboard() {
                     </div>
                   </div>
                   <span
-                    className={`px-4 py-2 rounded-xl border font-medium ${
-                      meta?.color || ""
-                    }`}
+                    className={`px-4 py-2 rounded-xl border font-medium ${meta?.color}`}
                   >
-                    {meta?.label || "Không rõ"}
+                    {meta?.label}
                   </span>
                 </div>
               </div>
@@ -434,7 +339,7 @@ function Dashboard() {
           })}
 
           {filteredOrders.length === 0 && !loading && (
-            <div className="text-center py-12 text-slate-400">
+            <div className="py-12 text-center text-slate-400">
               <UtensilsCrossed size={48} className="mx-auto mb-4 opacity-50" />
               <p>Chưa có đơn hàng nào</p>
             </div>
@@ -442,7 +347,6 @@ function Dashboard() {
         </div>
       </div>
 
-      {/* ===== MODAL ===== */}
       {selectedOrder && (
         <StaffDetailOrder
           order={selectedOrder}
@@ -452,36 +356,6 @@ function Dashboard() {
           processing={processing}
         />
       )}
-
-      <style>{`
-        @keyframes slide-in {
-          from {
-            transform: translateX(400px);
-            opacity: 0;
-          }
-          to {
-            transform: translateX(0);
-            opacity: 1;
-          }
-        }
-        
-        @keyframes pulse-border {
-          0%, 100% {
-            box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4);
-          }
-          50% {
-            box-shadow: 0 0 0 8px rgba(99, 102, 241, 0);
-          }
-        }
-        
-        .animate-slide-in {
-          animation: slide-in 0.3s ease-out;
-        }
-        
-        .animate-pulse-border {
-          animation: pulse-border 2s infinite;
-        }
-      `}</style>
     </div>
   );
 }
