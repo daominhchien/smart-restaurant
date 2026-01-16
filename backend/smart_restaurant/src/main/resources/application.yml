@@ -72,3 +72,7 @@ momo:
   end-point: https://test-payment.momo.vn/v2/gateway/api
   ipn-url: http://localhost:8080/api/momo/ipn-handler
 
+google:
+  client-id: 315292685589-c003buqq43ad0a35laoq80kelu45i6bf.apps.googleusercontent.com
+
+

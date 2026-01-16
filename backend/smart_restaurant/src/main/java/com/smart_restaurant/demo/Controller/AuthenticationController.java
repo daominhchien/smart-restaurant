@@ -4,6 +4,7 @@ import com.nimbusds.jose.JOSEException;
 import com.smart_restaurant.demo.Service.AccountService;
 import com.smart_restaurant.demo.Service.AuthenticationService;
 import com.smart_restaurant.demo.dto.Request.AuthenticateRequest;
+import com.smart_restaurant.demo.dto.Request.GoogleLoginRequest;
 import com.smart_restaurant.demo.dto.Request.SignupCustomerRequest;
 import com.smart_restaurant.demo.dto.Request.SignupRequest;
 import com.smart_restaurant.demo.dto.Response.ApiResponse;
@@ -62,4 +63,13 @@ public class AuthenticationController {
                 .result(accountService.verifyEmail(token))
                 .build();
     }
+
+    @PostMapping("/log-in/email/{tenantId}")
+    ApiResponse<AuthenticationResponse> authenticatedEmail (@RequestBody GoogleLoginRequest googleLoginRequest ,@PathVariable Integer tenantId){
+        AuthenticationResponse result=authenticationService.loginWithGoogle(googleLoginRequest.getToken(),tenantId);
+        return ApiResponse.<AuthenticationResponse>builder()
+                .result(result)
+                .build();
+    }
+
 }
