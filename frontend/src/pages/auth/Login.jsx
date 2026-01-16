@@ -136,6 +136,7 @@ function Login() {
           removeSavedAccount(email);
         }
       }
+      console.log(role);
 
       if (role === "SUPER_ADMIN") {
         navigate("/super-admin/accounts", { replace: true });
@@ -143,6 +144,8 @@ function Login() {
         navigate(`/tenant-admin/dashboard`, { replace: true });
       } else if (role === "STAFF") {
         navigate(`/waiter/dashboard`, { replace: true });
+      } else if (role === "KITCHEN_STAFF") {
+        navigate(`/kitchen/kds`, { replace: true });
       }
     } catch (error) {
       console.error(error);
