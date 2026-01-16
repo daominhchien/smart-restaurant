@@ -1,22 +1,40 @@
-import { X, Check, XCircle, Clock3, User, Utensils } from "lucide-react";
+import {
+  X,
+  Check,
+  XCircle,
+  Clock3,
+  User,
+  Utensils,
+  AlertCircle,
+} from "lucide-react";
 import { STATUS_META } from "../../utils/statusMeta";
 import Overlay from "../common/Overlay";
 
 const calcItemTotal = (item) => {
-  const modifierTotal = item.modifiers.reduce((sum, m) => sum + m.price, 0);
+  const modifierTotal =
+    item.modifiers?.reduce((sum, m) => sum + m.price, 0) || 0;
   return (item.price + modifierTotal) * item.quantity;
 };
 
 function StaffDetailOrder({ order, onClose, onApprove, onReject, processing }) {
   if (!order) return null;
 
-  const statusMeta = STATUS_META[order.oderStatus];
+  // Xử lý trường hợp status không tồn tại trong STATUS_META
+  const statusMeta = STATUS_META[order.oderStatus] || {
+    label: order.oderStatus || "Không rõ",
+    color: "bg-gray-50 text-gray-600 border-gray-200",
+    icon: AlertCircle,
+  };
+
   const StatusIcon = statusMeta.icon;
+
+  // Xử lý trường hợp detailOrders không tồn tại
+  const detailOrders = order.detailOrders || [];
 
   const subtotal =
     order.subtotal && order.subtotal > 0
       ? order.subtotal
-      : order.detailOrders.reduce((sum, item) => sum + calcItemTotal(item), 0);
+      : detailOrders.reduce((sum, item) => sum + calcItemTotal(item), 0);
 
   return (
     <Overlay>
@@ -35,7 +53,9 @@ function StaffDetailOrder({ order, onClose, onApprove, onReject, processing }) {
               </p>
               <p className="text-indigo-100 text-sm mt-1 flex items-center gap-3">
                 <Clock3 size={16} />{" "}
-                {new Date(order.createAt).toLocaleString("vi-VN")}
+                {order.createAt
+                  ? new Date(order.createAt).toLocaleString("vi-VN")
+                  : "Chưa có thời gian"}
               </p>
             </div>
 
@@ -65,50 +85,57 @@ function StaffDetailOrder({ order, onClose, onApprove, onReject, processing }) {
           <div className="mb-6">
             <p className="text-sm text-slate-500 mb-3">Chi tiết món ăn</p>
 
-            <div className="space-y-4">
-              {order.detailOrders.map((item) => {
-                const itemTotal = calcItemTotal(item);
+            {detailOrders.length > 0 ? (
+              <div className="space-y-4">
+                {detailOrders.map((item, index) => {
+                  const itemTotal = calcItemTotal(item);
 
-                return (
-                  <div
-                    key={item.detailOrderId}
-                    className="p-4 bg-slate-50 rounded-xl border border-slate-200"
-                  >
-                    <div className="flex justify-between">
-                      <div>
-                        <p className="font-semibold text-slate-800">
-                          {item.itemName}
-                        </p>
-                        <p className="text-sm text-slate-500">
-                          {item.quantity} × {item.price.toLocaleString()}đ
+                  return (
+                    <div
+                      key={item.detailOrderId || index}
+                      className="p-4 bg-slate-50 rounded-xl border border-slate-200"
+                    >
+                      <div className="flex justify-between">
+                        <div>
+                          <p className="font-semibold text-slate-800">
+                            {item.itemName || "Món ăn"}
+                          </p>
+                          <p className="text-sm text-slate-500">
+                            {item.quantity || 0} ×{" "}
+                            {(item.price || 0).toLocaleString()}đ
+                          </p>
+                        </div>
+
+                        <p className="font-semibold">
+                          {itemTotal.toLocaleString()}đ
                         </p>
                       </div>
 
-                      <p className="font-semibold">
-                        {itemTotal.toLocaleString()}đ
-                      </p>
+                      {/* Modifiers */}
+                      {item.modifiers && item.modifiers.length > 0 && (
+                        <div className="mt-2 space-y-1 text-sm text-slate-600">
+                          {item.modifiers.map((m, mIndex) => (
+                            <div
+                              key={m.modifierOptionId || mIndex}
+                              className="flex justify-between"
+                            >
+                              <span>
+                                ➕ {m.modifierGroupName}: {m.name}
+                              </span>
+                              <span>+{(m.price || 0).toLocaleString()}đ</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
-
-                    {/* Modifiers */}
-                    {item.modifiers.length > 0 && (
-                      <div className="mt-2 space-y-1 text-sm text-slate-600">
-                        {item.modifiers.map((m) => (
-                          <div
-                            key={m.modifierOptionId}
-                            className="flex justify-between"
-                          >
-                            <span>
-                              ➕ {m.modifierGroupName}: {m.name}
-                            </span>
-                            <span>+{m.price.toLocaleString()}đ</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-slate-400">
+                <p>Chưa có món ăn nào</p>
+              </div>
+            )}
           </div>
 
           {/* Special note */}

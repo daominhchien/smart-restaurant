@@ -8,10 +8,12 @@ import {
   ChefHat,
   Sparkles,
   Clock3,
+  LogOut,
+  User,
+  X,
 } from "lucide-react";
 import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
-import { LogOut, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import authApi from "../../api/authApi";
 import StaffDetailOrder from "../../components/waiter/StaffDetailOrder";
@@ -70,8 +72,11 @@ function Dashboard() {
   const [processing, setProcessing] = useState(false);
   const [tenant, setTenant] = useState(null);
 
-  const wsRef = useRef(null);
+  // Thông báo mới
+  const [notifications, setNotifications] = useState([]);
+  const [newOrderIds, setNewOrderIds] = useState(new Set());
 
+  const wsRef = useRef(null);
   const [userName, setUserName] = useState("");
   const navigate = useNavigate();
 
@@ -119,7 +124,7 @@ function Dashboard() {
   /* ===== WEBSOCKET ===== */
   const connectWebSocket = () => {
     const socket = new SockJS(
-      `https://localhost:${import.meta.env.VITE_SERVER_PORT}/ws`
+      `http://localhost:${import.meta.env.VITE_SERVER_PORT}/ws`
     );
 
     const stompClient = new Client({
@@ -142,6 +147,30 @@ function Dashboard() {
   };
 
   const handleNewOrder = (order) => {
+    // Thêm thông báo nếu có message
+    if (order.message) {
+      const notification = {
+        id: Date.now(),
+        orderId: order.orderId,
+        tableId: order.tableId,
+        message: order.message,
+        timestamp: new Date(),
+      };
+
+      setNotifications((prev) => [notification, ...prev]);
+
+      // Đánh dấu đơn hàng mới
+      setNewOrderIds((prev) => new Set([...prev, order.orderId]));
+
+      // Tự động xóa thông báo sau 10 giây
+      setTimeout(() => {
+        setNotifications((prev) =>
+          prev.filter((n) => n.id !== notification.id)
+        );
+      }, 10000);
+    }
+
+    // Cập nhật danh sách đơn hàng
     setOrders((prev) => {
       const index = prev.findIndex((o) => o.orderId === order.orderId);
       if (index !== -1) {
@@ -165,7 +194,7 @@ function Dashboard() {
     }
   };
 
-  /* ===== ACTIONS () ===== */
+  /* ===== ACTIONS ===== */
   const handleApprove = async (orderId) => {
     setProcessing(true);
     try {
@@ -175,6 +204,13 @@ function Dashboard() {
 
       setSelectedOrder(null);
       fetchOrders();
+
+      // Xóa đánh dấu "mới"
+      setNewOrderIds((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(orderId);
+        return newSet;
+      });
     } catch (err) {
       console.error("Approve order error:", err);
       alert("Duyệt đơn thất bại");
@@ -192,12 +228,29 @@ function Dashboard() {
 
       setSelectedOrder(null);
       fetchOrders();
+
+      // Xóa đánh dấu "mới"
+      setNewOrderIds((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(orderId);
+        return newSet;
+      });
     } catch (err) {
       console.error("Reject order error:", err);
       alert("Từ chối đơn thất bại");
     } finally {
       setProcessing(false);
     }
+  };
+
+  const handleOrderClick = (order) => {
+    // Xóa đánh dấu "mới" khi click vào đơn
+    setNewOrderIds((prev) => {
+      const newSet = new Set(prev);
+      newSet.delete(order.orderId);
+      return newSet;
+    });
+    setSelectedOrder(order);
   };
 
   /* ===== FILTER ===== */
@@ -216,9 +269,7 @@ function Dashboard() {
         {/* ===== HEADER ===== */}
         <div className="bg-white rounded-3xl shadow p-4 sm:p-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:justify-between lg:items-center">
-            {/* LEFT */}
             <div className="flex items-start sm:items-center gap-4">
-              {/* LOGO */}
               <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl overflow-hidden bg-slate-100 shrink-0">
                 {tenant?.logoUrl ? (
                   <img
@@ -233,16 +284,13 @@ function Dashboard() {
                 )}
               </div>
 
-              {/* TEXT */}
               <div className="space-y-1">
                 <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold leading-tight">
                   {tenant?.nameTenant || "Dashboard Staff"}
                 </h1>
-
                 <p className="text-sm sm:text-base text-slate-500">
                   Theo dõi đơn hàng realtime
                 </p>
-
                 {tenant && (
                   <p className="text-xs sm:text-sm text-slate-400 flex items-center gap-1">
                     <Clock3 size={14} className="sm:size-4" />
@@ -253,18 +301,15 @@ function Dashboard() {
             </div>
 
             <div className="flex flex-row items-center justify-between gap-3">
-              {/* User info */}
               <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-xl">
                 <User size={16} className="text-slate-600" />
                 <span className="text-sm font-medium text-slate-700">
                   {userName || "Staff"}
                 </span>
               </div>
-              {/* Logout */}
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-1 px-3 py-2 rounded-xl
-               bg-red-50 text-red-600 hover:bg-red-100 transition cursor-pointer"
+                className="flex items-center gap-1 px-3 py-2 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 transition cursor-pointer"
               >
                 <LogOut size={16} />
                 <span className="text-sm font-medium">Đăng xuất</span>
@@ -273,17 +318,53 @@ function Dashboard() {
           </div>
         </div>
 
+        {/* ===== NOTIFICATIONS ===== */}
+        {notifications.length > 0 && (
+          <div className="fixed top-4 right-4 z-40 space-y-2 max-w-sm">
+            {notifications.map((notif) => (
+              <div
+                key={notif.id}
+                className="bg-linear-to-r from-indigo-500 to-purple-600 text-white rounded-2xl shadow-lg p-4 flex items-start gap-3 animate-slide-in"
+              >
+                <div className="bg-white/20 p-2 rounded-lg">
+                  <Bell size={20} className="animate-bounce" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-sm">{notif.message}</p>
+                  <p className="text-xs opacity-90 mt-1">
+                    Vừa xong - Order #{notif.orderId}
+                  </p>
+                </div>
+                <button
+                  onClick={() =>
+                    setNotifications((prev) =>
+                      prev.filter((n) => n.id !== notif.id)
+                    )
+                  }
+                  className="text-white/80 hover:text-white"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* ===== STATS ===== */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {["Pending_approval", "Cooking", "Serving", "Paid"].map((s) => {
             const Icon = STATUS_META[s].icon;
             return (
               <div key={s} className="bg-white rounded-2xl p-6 shadow">
-                <div className="flex justify-between">
-                  <Icon size={24} />
+                <div className="flex justify-between items-start">
+                  <div className={`p-2 rounded-lg ${STATUS_META[s].color}`}>
+                    <Icon size={24} />
+                  </div>
                   <span className="text-3xl font-bold">{countByStatus(s)}</span>
                 </div>
-                <p className="text-sm text-slate-500">{STATUS_META[s].label}</p>
+                <p className="text-sm text-slate-500 mt-2">
+                  {STATUS_META[s].label}
+                </p>
               </div>
             );
           })}
@@ -295,26 +376,69 @@ function Dashboard() {
         <div className="grid gap-4">
           {filteredOrders.map((order) => {
             const meta = STATUS_META[order.oderStatus];
-            const Icon = Bell;
+            const Icon = meta?.icon || Bell;
+            const isNew = newOrderIds.has(order.orderId);
 
             return (
               <div
                 key={order.orderId}
-                onClick={() => setSelectedOrder(order)}
-                className="bg-white rounded-2xl p-6 shadow cursor-pointer hover:bg-gray-50 hover:shadow-md duration-200"
+                onClick={() => handleOrderClick(order)}
+                className={`bg-white rounded-2xl p-6 shadow cursor-pointer hover:shadow-md transition-all duration-200 relative overflow-hidden ${
+                  isNew
+                    ? "ring-2 ring-indigo-500 animate-pulse-border"
+                    : "hover:bg-gray-50"
+                }`}
               >
-                <div className="flex justify-between">
-                  <strong>
-                    Order #{order.orderId} – Bàn {order.tableId}
-                  </strong>
-                  <span className={`px-3 py-1 rounded-xl border`}>
-                    <Icon size={14} className="inline mr-1" />
-                    
+                {/* Badge "MỚI" */}
+                {isNew && (
+                  <div className="absolute top-3 right-3">
+                    <span className="bg-linear-to-r from-indigo-500 to-purple-600 text-white text-xs font-bold px-3 py-1 rounded-full animate-bounce">
+                      MỚI
+                    </span>
+                  </div>
+                )}
+
+                {/* Hiệu ứng sáng cho đơn mới */}
+                {isNew && (
+                  <div className="absolute inset-0 bg-linear-to-r from-indigo-500/5 to-purple-500/5 pointer-events-none"></div>
+                )}
+
+                <div className="flex justify-between items-center relative z-10">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`p-2 rounded-lg ${
+                        meta?.color || "bg-gray-100"
+                      }`}
+                    >
+                      <Icon size={20} />
+                    </div>
+                    <div>
+                      <strong className="text-lg">
+                        Order #{order.orderId}
+                      </strong>
+                      <p className="text-sm text-slate-500">
+                        Bàn {order.tableId}
+                      </p>
+                    </div>
+                  </div>
+                  <span
+                    className={`px-4 py-2 rounded-xl border font-medium ${
+                      meta?.color || ""
+                    }`}
+                  >
+                    {meta?.label || "Không rõ"}
                   </span>
                 </div>
               </div>
             );
           })}
+
+          {filteredOrders.length === 0 && !loading && (
+            <div className="text-center py-12 text-slate-400">
+              <UtensilsCrossed size={48} className="mx-auto mb-4 opacity-50" />
+              <p>Chưa có đơn hàng nào</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -328,6 +452,36 @@ function Dashboard() {
           processing={processing}
         />
       )}
+
+      <style>{`
+        @keyframes slide-in {
+          from {
+            transform: translateX(400px);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+        
+        @keyframes pulse-border {
+          0%, 100% {
+            box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4);
+          }
+          50% {
+            box-shadow: 0 0 0 8px rgba(99, 102, 241, 0);
+          }
+        }
+        
+        .animate-slide-in {
+          animation: slide-in 0.3s ease-out;
+        }
+        
+        .animate-pulse-border {
+          animation: pulse-border 2s infinite;
+        }
+      `}</style>
     </div>
   );
 }

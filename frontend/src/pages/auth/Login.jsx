@@ -169,7 +169,8 @@ function Login() {
                   }
                 }}
                 required
-                className="w-full pl-10 pr-4 border-2 border-blue-200 h-11 rounded-lg text-gray-700 focus:outline-none focus:border-blue-500 focus:shadow-lg focus:shadow-blue-200 transition-all duration-200 placeholder-gray-400"
+                className="w-full pl-10 pr-4 border-2 border-blue-200 h-11 rounded-lg text-gray-700 focus:outline-none 
+                focus:border-blue-500 focus:shadow-lg focus:shadow-blue-200 transition-all duration-200 placeholder-gray-400"
                 placeholder="Nhập email của bạn"
               />
             </div>
@@ -285,7 +286,9 @@ function Login() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-linear-to-r from-blue-500 to-blue-600 py-3 px-4 rounded-lg font-bold text-white cursor-pointer hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-300 transition-all duration-300 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+            className="w-full bg-linear-to-r from-blue-500 to-blue-600 py-3 px-4 rounded-lg font-bold text-white cursor-pointer 
+            hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-300 transition-all duration-300 active:translate-y-0 disabled:opacity-50 
+            disabled:cursor-not-allowed disabled:hover:translate-y-0"
           >
             {isLoading ? "Đang xử lý..." : "Đăng nhập"}
           </button>

@@ -47,6 +47,7 @@ export default function CartModal({
 
     const payload = {
       customerName: "Khách tại quán",
+      phone: "0000000000",
       tableId: Number(tableId),
       special: special.trim(),
       detailOrders: mapCartToDetailOrders(safeCart),
