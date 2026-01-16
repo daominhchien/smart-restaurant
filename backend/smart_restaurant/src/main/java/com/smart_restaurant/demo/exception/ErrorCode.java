@@ -76,7 +76,8 @@ public enum ErrorCode {
     CUSTOMER_NOT_FOUND("1050","Customer not exist",HttpStatus.BAD_REQUEST),
     CUSTOMER_NOT_ORDER_ITEM("1051","The customer has not purchased this product, so they cannot leave a review.",HttpStatus.BAD_REQUEST),
     EMPLOYEE_NOT_FOUND("4008", "EMPLOYEE_NOT_FOUND", HttpStatus.BAD_REQUEST),
-    EMAIL_NOT_VERIFY("1052","unverified email",HttpStatus.BAD_REQUEST);
+    EMAIL_NOT_VERIFY("1052","unverified email",HttpStatus.BAD_REQUEST),
+    PHONE_EXISTED("1053", "PHONE_EXISTED", HttpStatus.BAD_REQUEST);
 
     ErrorCode(String code, String message, HttpStatus httpStatusCode) {
         this.code = code;

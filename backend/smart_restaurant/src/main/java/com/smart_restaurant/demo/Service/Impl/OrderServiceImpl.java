@@ -180,6 +180,12 @@ public class OrderServiceImpl implements OrderService {
         } else {
 
             customerName = orderRequest.getCustomerName();
+            Optional<Customer> existingCustomer = customerRepository.findByPhone(orderRequest.getPhone());
+
+            if (existingCustomer.isPresent()) {
+                throw new AppException(ErrorCode.PHONE_EXISTED);
+            }
+
             String phone = orderRequest.getPhone();
             String address = null;
             Genders gender = null;

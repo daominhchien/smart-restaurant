@@ -19,9 +19,6 @@ public class OrderRequest {
     private String customerName;
     @NotBlank(message = "Phone is required")
     private String phone;
-    private String address;
-    private Genders gender;
-    Account account;
 
     private Integer tableId;
     private String special;
