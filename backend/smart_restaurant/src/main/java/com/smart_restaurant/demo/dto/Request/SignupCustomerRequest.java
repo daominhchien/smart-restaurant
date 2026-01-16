@@ -16,8 +16,4 @@ public class SignupCustomerRequest {
     String username;
     @Size(min=6,message = "NOT_ENOUGHT_CHARACTER_PASSWORD")
     String password;
-    String name;
-    String phone;
-    String address;
-    Genders gender;
 }
