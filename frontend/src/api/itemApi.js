@@ -21,6 +21,17 @@ const itemApi = {
     });
   },
 
+  getItemsByIdsFromAll: async (itemIds = []) => {
+    if (!itemIds.length) return [];
+
+    const response = await itemApi.getAllItems(0, 1000, null, null);
+
+    const items = response.result || response.data?.result || [];
+
+    // filter theo id
+    return items.filter((item) => itemIds.includes(item.itemId));
+  },
+
   addNewItem: (data) => axiosClient.post("/menu/items", data),
 
   update: (id, data) => axiosClient.put(`/menu/items/${id}`, data),
