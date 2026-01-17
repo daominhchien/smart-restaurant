@@ -32,8 +32,6 @@ export default function OrderHistoryModal({ onClose }) {
         sortedOrders = recentOrders.slice(0, 1);
       }
 
-      console.log(sortedOrders);
-
       setOrders(sortedOrders);
     } catch (error) {
       console.error("Lỗi lấy lịch sử đơn hàng:", error);

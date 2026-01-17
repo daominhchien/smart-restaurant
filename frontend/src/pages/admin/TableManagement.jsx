@@ -133,7 +133,7 @@ export default function TableManagement() {
       for (const table of activeTables) {
         try {
           await qrApi.generateQrbyId(table.tableId);
-          console.log(`Đã tạo lại QR cho bàn ${table.tableName}`);
+          toast.success(`Đã tạo lại QR cho bàn ${table.tableName}`);
         } catch (err) {
           console.error(`Lỗi khi tạo lại QR bàn ${table.tableName}`, err);
         }

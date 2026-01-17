@@ -30,7 +30,7 @@ export default function Menu() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [userName, setUserName] = useState(() =>
-    sessionStorage.getItem("userName")
+    sessionStorage.getItem("userName"),
   );
 
   const [cart, setCart] = useState(() => {
@@ -42,6 +42,22 @@ export default function Menu() {
       return [];
     }
   });
+
+  // ✅ Lưu items đã order trước đó
+  const [orderedItems, setOrderedItems] = useState(() => {
+    try {
+      const stored = sessionStorage.getItem("orderedItems");
+      const parsed = stored ? JSON.parse(stored) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // ✅ Lưu orderId
+  const [orderId, setOrderId] = useState(() =>
+    sessionStorage.getItem("orderId"),
+  );
 
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
@@ -105,6 +121,18 @@ export default function Menu() {
     sessionStorage.setItem("cart", JSON.stringify(cart));
   }, [cart]);
 
+  // ✅ Lưu orderedItems vào sessionStorage
+  useEffect(() => {
+    sessionStorage.setItem("orderedItems", JSON.stringify(orderedItems));
+  }, [orderedItems]);
+
+  // ✅ Lưu orderId vào sessionStorage
+  useEffect(() => {
+    if (orderId) {
+      sessionStorage.setItem("orderId", orderId);
+    }
+  }, [orderId]);
+
   const fuse = useMemo(() => {
     if (!items.length) return null;
     return new Fuse(items, {
@@ -127,7 +155,7 @@ export default function Menu() {
 
     if (selectedCategory !== null) {
       result = result.filter(
-        (item) => item.category?.[0]?.categoryId === selectedCategory
+        (item) => item.category?.[0]?.categoryId === selectedCategory,
       );
     }
 
@@ -137,7 +165,7 @@ export default function Menu() {
   const getModifierGroupsOfItem = (item) => {
     if (!item.modifierGroupId?.length) return [];
     return modifierGroups.filter((mg) =>
-      item.modifierGroupId.includes(mg.modifierGroupId)
+      item.modifierGroupId.includes(mg.modifierGroupId),
     );
   };
 
@@ -171,9 +199,9 @@ export default function Menu() {
         .map((c) =>
           c.cartItemId === cartItemId
             ? { ...c, quantity: c.quantity + delta }
-            : c
+            : c,
         )
-        .filter((c) => c.quantity > 0)
+        .filter((c) => c.quantity > 0),
     );
   };
 
@@ -190,7 +218,7 @@ export default function Menu() {
     items: filteredItems.filter((item) =>
       cat.categoryId === -1
         ? !item.category?.length
-        : item.category?.[0]?.categoryId === cat.categoryId
+        : item.category?.[0]?.categoryId === cat.categoryId,
     ),
   }));
 
@@ -424,7 +452,7 @@ export default function Menu() {
                     ))}
                   </div>
                 </div>
-              )
+              ),
           )}
         </div>
       </div>
@@ -445,9 +473,17 @@ export default function Menu() {
       {isCartOpen && (
         <CartModal
           cart={cart}
+          orderedItems={orderedItems}
+          orderId={orderId}
           onUpdateQty={updateQuantity}
           onClose={() => setIsCartOpen(false)}
-          onOrderSuccess={() => {
+          onOrderSuccess={(mergedItems, newOrderId) => {
+            // ✅ Lưu items + orderId
+            setOrderedItems(mergedItems);
+            if (newOrderId) {
+              setOrderId(newOrderId);
+            }
+            // ✅ Xóa cart
             setCart([]);
             sessionStorage.removeItem("cart");
           }}
