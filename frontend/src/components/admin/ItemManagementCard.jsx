@@ -189,7 +189,7 @@ function ItemManagementCard() {
               📦 Chưa có món ăn nào
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               {items.map((item) => (
                 <div
                   key={item.itemId}
@@ -206,7 +206,7 @@ function ItemManagementCard() {
                     group
                   "
                 >
-                  <div className="relative overflow-hidden bg-gray-100 h-44">
+                  <div className="relative overflow-hidden bg-gray-100 aspect-[4/3]">
                     <img
                       src={
                         item.avatarUrl ||

@@ -13,7 +13,6 @@ function MenuManagement() {
       </div>
       {/* Quản lý item */}
       <ItemManagementCard />
-      <></>
     </div>
   );
 }

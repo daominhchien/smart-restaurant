@@ -40,6 +40,10 @@ function Navigation() {
     }
   };
 
+  const handleReload = () => {
+    window.location.reload();
+  };
+
   const isActive = (keyword) => pathname.includes(keyword);
 
   const styleLink =
@@ -66,7 +70,10 @@ function Navigation() {
           <div className="flex items-center justify-between">
             {/* Left - Logo & Title */}
             <div className="flex items-center gap-3 md:gap-4">
-              <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg bg-linear-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
+              <div
+                onClick={handleReload}
+                className="cursor-pointer hover:scale-105 trasision-all duration-200 w-10 h-10 md:w-12 md:h-12 rounded-lg bg-linear-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg"
+              >
                 <img
                   src={Logo}
                   alt="Logo"
