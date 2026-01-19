@@ -21,6 +21,7 @@ import lombok.experimental.FieldDefaults;
 
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.text.ParseException;
 
 @RequestMapping("api/auth")
@@ -57,16 +58,16 @@ public class AuthenticationController {
                 .build();
     }
     @GetMapping("/verify-email")
-    ApiResponse<ConfirmEmailResponse> verifyEmail(@RequestParam String token) throws jakarta.mail.internet.ParseException, ParseException, JOSEException {
+    ApiResponse<ConfirmEmailResponse> verifyEmail(@RequestParam String token,HttpServletResponse httpServletResponse) throws jakarta.mail.internet.ParseException, ParseException, JOSEException, IOException {
         return ApiResponse.<ConfirmEmailResponse>builder()
                 .message("verify email finish")
-                .result(accountService.verifyEmail(token))
+                .result(accountService.verifyEmail(token,httpServletResponse))
                 .build();
     }
 
     @PostMapping("/log-in/email/{tenantId}")
-    ApiResponse<AuthenticationResponse> authenticatedEmail (@RequestBody GoogleLoginRequest googleLoginRequest ,@PathVariable Integer tenantId){
-        AuthenticationResponse result=authenticationService.loginWithGoogle(googleLoginRequest.getToken(),tenantId);
+    ApiResponse<AuthenticationResponse> authenticatedEmail (@RequestBody GoogleLoginRequest googleLoginRequest ,@PathVariable Integer tenantId,HttpServletResponse response){
+        AuthenticationResponse result=authenticationService.loginWithGoogle(googleLoginRequest.getToken(),tenantId, response);
         return ApiResponse.<AuthenticationResponse>builder()
                 .result(result)
                 .build();
