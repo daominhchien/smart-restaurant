@@ -58,15 +58,6 @@ public class OrderController {
 
         System.out.println("🔍 JWT Token: " + (jwtToken != null ? "Có" : "Null"));
 
-        // Nếu KHÔNG đăng nhập, validate customerName & phone
-        if (jwtToken == null) {
-            if (orderRequest.getCustomerName() == null || orderRequest.getCustomerName().isBlank()) {
-                throw new AppException(ErrorCode.CUSTOMER_NAME_REQUIRED);
-            }
-            if (orderRequest.getPhone() == null || orderRequest.getPhone().isBlank()) {
-                throw new AppException(ErrorCode.PHONE_REQUIRED);
-            }
-        }
 
         // jwtToken sẽ tự động null nếu chưa đăng nhập
         OrderResponse orderResponse = orderService.createOrder(orderRequest, jwtToken);
