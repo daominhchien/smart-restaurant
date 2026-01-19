@@ -45,13 +45,13 @@ public class PaymentServiceImpl implements PaymentService {
     @Transactional
     public Payment createPayment(Integer orderId, Long amount, String momoRequestId, String momoOrderId) {
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("Order not found: " + orderId));
+                .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
 
         // CHECK PAYMENT ĐÃ TỒN TẠI CHƯA
         Optional<Payment> existingPayment = paymentRepository.findByOrder_OrderId(orderId);
 
         if (existingPayment.isPresent()) {
-            // Payment đã tồn tại, update thay vì insert
+
             Payment payment = existingPayment.get();
             payment.setAmount(amount.doubleValue());
             payment.setMomoRequestId(momoRequestId);
@@ -63,10 +63,10 @@ public class PaymentServiceImpl implements PaymentService {
 
         // Lấy status "PENDING" và type payment "MOMO"
         Status pendingStatus = statusRepository.findByOrderStatus(OrderStatus.Pending_payment)
-                .orElseThrow(() -> new RuntimeException("Status PENDING not found"));
+                .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_STATUS_PENDING));
 
         TypePayment momoType = typePaymentRepository.findByName("MOMO")
-                .orElseThrow(() -> new RuntimeException("TypePayment MOMO not found"));
+                .orElseThrow(() -> new AppException(ErrorCode.TYPE_MOMO_NOT_FOUND));
 
         Payment payment = Payment.builder()
                 .order(order)
