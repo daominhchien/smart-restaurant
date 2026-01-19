@@ -54,7 +54,7 @@ function Login() {
 
   // Lọc danh sách tài khoản theo input của người dùng
   const filteredAccounts = savedAccounts.filter((account) =>
-    account.email.toLowerCase().includes(email.toLowerCase()),
+    account?.email?.toLowerCase().includes(email.toLowerCase()),
   );
 
   const addSavedAccount = (newEmail, newPassword) => {

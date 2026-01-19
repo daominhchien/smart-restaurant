@@ -117,6 +117,7 @@ export default function CartModal({
       special: special.trim(),
       detailOrders: mapCartToDetailOrders(safeCart),
     };
+    console.log(payload);
 
     try {
       const res = await orderApi.makeOrder(payload);

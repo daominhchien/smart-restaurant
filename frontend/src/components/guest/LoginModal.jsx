@@ -1,8 +1,13 @@
+// ============================================
+// LoginModal.jsx
+// ============================================
 import { X, Mail, Lock } from "lucide-react";
 import { useState, useContext } from "react";
 import { AuthContext } from "../../context/AuthContext";
 import authApi from "../../api/authApi";
 import Overlay from "../common/Overlay";
+import CustomerInfoModal from "./CustomerInfoModal.jsx";
+
 export default function LoginModal({
   onClose,
   tenantId,
@@ -13,6 +18,7 @@ export default function LoginModal({
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showCustomerInfo, setShowCustomerInfo] = useState(false);
   const { login } = useContext(AuthContext);
 
   const handleSubmit = async (e) => {
@@ -32,7 +38,10 @@ export default function LoginModal({
         password,
       });
 
+      console.log(res);
+
       const accessToken = res?.result?.acessToken;
+      const firstActivity = res?.result?.firstActivity;
       const userName = email;
 
       if (!accessToken) {
@@ -48,17 +57,45 @@ export default function LoginModal({
 
       const role = localStorage.getItem("role");
 
-      onClose();
-      onSuccess?.();
+      // ✅ KIỂM TRA FIRST ACTIVITY
+      if (firstActivity) {
+        // Hiển thị modal nhập thông tin khách hàng
+        setShowCustomerInfo(true);
+      } else {
+        // Đăng nhập bình thường
+        onClose();
+        onSuccess?.();
+      }
     } catch (err) {
       setError(
-        err?.response?.data?.message || "Email hoặc mật khẩu không chính xác"
+        err?.response?.data?.message || "Email hoặc mật khẩu không chính xác",
       );
       console.error(err);
     } finally {
       setLoading(false);
     }
   };
+
+  const handleCustomerInfoSuccess = () => {
+    setShowCustomerInfo(false);
+    onClose();
+    onSuccess?.();
+  };
+
+  const handleCustomerInfoClose = () => {
+    setShowCustomerInfo(false);
+    onClose();
+  };
+
+  // Nếu đang hiển thị modal nhập thông tin khách hàng
+  if (showCustomerInfo) {
+    return (
+      <CustomerInfoModal
+        onSuccess={handleCustomerInfoSuccess}
+        onClose={handleCustomerInfoClose}
+      />
+    );
+  }
 
   return (
     <Overlay>
@@ -85,7 +122,7 @@ export default function LoginModal({
         )}
 
         {/* FORM */}
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-4">
           {/* EMAIL */}
           <div className="relative">
             <Mail
@@ -118,13 +155,13 @@ export default function LoginModal({
 
           {/* SUBMIT */}
           <button
-            type="submit"
+            onClick={handleSubmit}
             disabled={loading}
             className="py-3 w-full text-white font-semibold bg-blue-600 rounded-2xl hover:bg-blue-700 transition disabled:opacity-60"
           >
             {loading ? "Đang đăng nhập..." : "Đăng nhập"}
           </button>
-        </form>
+        </div>
 
         {/* FOOTER */}
         <div className="mt-6 text-center text-sm text-gray-500">
