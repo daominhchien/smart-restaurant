@@ -8,6 +8,8 @@ export default function InvoiceModal({ invoice, onClose }) {
   const navigate = useNavigate();
   if (!invoice) return null;
 
+  console.log(invoice);
+
   const handlePrint = () => {
     window.print();
   };
