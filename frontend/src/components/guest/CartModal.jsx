@@ -86,14 +86,12 @@ export default function CartModal({
 
     // ===== GỌI THÊM MÓN =====
     if (orderId) {
-      // ✅ Chỉ gửi items mới
+      // ✅ Gửi chỉ items mới (safeCart)
       const detailOrders = mapCartToDetailOrders(safeCart);
       const mergedItems = mergeItems(safeOrderedItems, safeCart);
 
       try {
-        await orderApi.customerUpdate(orderId, {
-          detailOrders: detailOrders,
-        });
+        await orderApi.customerUpdate(orderId, detailOrders);
 
         toast.success("Đã gửi thêm món cho nhà bếp");
         onOrderSuccess?.(mergedItems);

@@ -1,4 +1,4 @@
-import { Search, ShoppingCart, History } from "lucide-react";
+import { Search, ShoppingCart, History, Bell, X } from "lucide-react";
 import { useEffect, useState, useMemo, useContext } from "react";
 import { useParams, useLocation } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
@@ -18,6 +18,9 @@ import categoryApi from "../../api/categoryApi";
 import itemApi from "../../api/itemApi";
 import modifierGroupApi from "../../api/modifierGroupApi";
 import authApi from "../../api/authApi";
+
+import useCustomerWebSocket from "../../hooks/useCustomerWebSocket";
+import toast from "react-hot-toast";
 
 export default function Menu() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -43,7 +46,6 @@ export default function Menu() {
     }
   });
 
-  // ✅ Lưu items đã order trước đó
   const [orderedItems, setOrderedItems] = useState(() => {
     try {
       const stored = sessionStorage.getItem("orderedItems");
@@ -54,7 +56,6 @@ export default function Menu() {
     }
   });
 
-  // ✅ Lưu orderId
   const [orderId, setOrderId] = useState(() =>
     sessionStorage.getItem("orderId"),
   );
@@ -70,6 +71,15 @@ export default function Menu() {
   const queryParams = new URLSearchParams(location.search);
   const accessToken = queryParams.get("accessToken");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // ✅ Integrate WebSocket Hook
+  const { notifications, newOrderIds, clearNewOrder, removeNotification } =
+    useCustomerWebSocket({
+      serverPort: import.meta.env.VITE_SERVER_PORT,
+      onCustomerUpdate: (order) => {
+        console.log("Order update received:", order);
+      },
+    });
 
   useEffect(() => {
     const handleStorageChange = () => {
@@ -121,12 +131,10 @@ export default function Menu() {
     sessionStorage.setItem("cart", JSON.stringify(cart));
   }, [cart]);
 
-  // ✅ Lưu orderedItems vào sessionStorage
   useEffect(() => {
     sessionStorage.setItem("orderedItems", JSON.stringify(orderedItems));
   }, [orderedItems]);
 
-  // ✅ Lưu orderId vào sessionStorage
   useEffect(() => {
     if (orderId) {
       sessionStorage.setItem("orderId", orderId);
@@ -248,6 +256,34 @@ export default function Menu() {
 
             {/* ACTIONS */}
             <div className="flex items-center gap-3">
+              {/* NOTIFICATIONS */}
+              {notifications.length > 0 && (
+                <div className="z-40 fixed top-20 right-4 max-w-sm space-y-2">
+                  {notifications.map((notif) => (
+                    <div
+                      key={notif.id}
+                      className="flex items-start gap-3 p-4 text-white bg-linear-to-r from-indigo-500 to-purple-600 rounded-2xl shadow-lg animate-slide-in"
+                    >
+                      <div className="p-2 bg-white/20 rounded-lg">
+                        <Bell size={20} className="animate-bounce" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-sm">{notif.message}</p>
+                        <p className="mt-1 text-xs opacity-90">
+                          Bàn {notif.tableId} - Order #{notif.orderId}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => removeNotification(notif.id)}
+                        className="text-white/80 hover:text-white"
+                      >
+                        <X size={18} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {/* HISTORY */}
               <button
                 onClick={() => setIsHistoryOpen(true)}
@@ -325,7 +361,7 @@ export default function Menu() {
 
           {/* Mobile Header */}
           <div className="flex sm:hidden flex-col gap-4 py-4 px-4">
-            {/* Top Row: Logo + Cart */}
+            {/* Top Row: Logo + Notifications + Cart */}
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-3">
                 <img
@@ -343,17 +379,19 @@ export default function Menu() {
                 </div>
               </div>
 
-              <button
-                onClick={() => setIsCartOpen(true)}
-                className="relative flex items-center justify-center w-11 h-11 text-white bg-linear-to-r from-blue-600 to-blue-700 rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg"
-              >
-                <ShoppingCart size={20} />
-                {getTotalItems() > 0 && (
-                  <span className="absolute flex items-center justify-center w-5 h-5 text-white text-xs font-bold bg-linear-to-br from-red-500 to-red-600 rounded-full -top-1.5 -right-1.5 shadow-lg ring-2 ring-white">
-                    {getTotalItems()}
-                  </span>
-                )}
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setIsCartOpen(true)}
+                  className="relative flex items-center justify-center w-10 h-10 text-white bg-linear-to-r from-blue-600 to-blue-700 rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg"
+                >
+                  <ShoppingCart size={18} />
+                  {getTotalItems() > 0 && (
+                    <span className="absolute flex items-center justify-center w-5 h-5 text-white text-xs font-bold bg-linear-to-br from-red-500 to-red-600 rounded-full -top-1.5 -right-1.5 shadow-lg ring-2 ring-white">
+                      {getTotalItems()}
+                    </span>
+                  )}
+                </button>
+              </div>
             </div>
 
             {/* Bottom Row: Actions */}
@@ -478,12 +516,11 @@ export default function Menu() {
           onUpdateQty={updateQuantity}
           onClose={() => setIsCartOpen(false)}
           onOrderSuccess={(mergedItems, newOrderId) => {
-            // ✅ Lưu items + orderId
             setOrderedItems(mergedItems);
             if (newOrderId) {
               setOrderId(newOrderId);
+              clearNewOrder(newOrderId);
             }
-            // ✅ Xóa cart
             setCart([]);
             sessionStorage.removeItem("cart");
           }}
