@@ -543,18 +543,16 @@ public class OrderServiceImpl implements OrderService {
             }
 
             case "Pending_approval" -> {
+                orderNotification.setMessage("Có đơn hàng cần phê duyệt.");
+                notificationService.notifyNewOrder(orderNotification);
+            }
+
+            case "Pending_payment" -> {
                 if(PaymentType.Tranfer.equals(order.getPaymentType())){
                     orderNotification.setMessage("khách hàng yêu cầu thanh toán tiền mặt hãy đến thu tiền.");
                     notificationService.notifyNewOrder(orderNotification);
                 }
                 orderNotification.setMessage("khách hàng thanh toán bằng momo.");
-                notificationService.notifyNewOrder(orderNotification);
-            }
-
-            case "Pending_payment" -> {
-                orderNotification.setMessage("Bạn đã thanh toán thành công.");
-                notificationService.notifyAcceptOrderCustomer(orderNotification);
-                orderNotification.setMessage("Khách hàng thanh toán thành công.");
                 notificationService.notifyNewOrder(orderNotification);
             }
             case "Serving"->{
