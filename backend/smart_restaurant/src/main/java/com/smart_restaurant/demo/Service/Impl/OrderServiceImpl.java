@@ -112,9 +112,6 @@ public class OrderServiceImpl implements OrderService {
         order.setTax(taxRate);
         order.setTotal(total);
         order.setDiscount(discountAmount);
-        Status status=order.getStatus();
-        status.setOrderStatus(OrderStatus.Pending_payment);
-        statusRepository.save(status);
         InvoiceResponse invoiceResponse=orderMapper.toInvoiceResponse(orderRepository.save(order));
         invoiceResponse.setTableName(order.getTable().getTableName());
         invoiceResponse.setDetailOrders(toDetailOrderResponses(order.getDetailOrders()));
@@ -551,7 +548,7 @@ public class OrderServiceImpl implements OrderService {
             case "Pending_payment" -> {
                 orderNotification.setMessage("Bạn đã thanh toán thành công.");
                 notificationService.notifyAcceptOrderCustomer(orderNotification);
-                orderNotification.setMessage("Khách hàng yêu cầu thanh toán.");
+                orderNotification.setMessage("Khách hàng thanh toán thành công.");
                 notificationService.notifyNewOrder(orderNotification);
             }
             case "Serving"->{
