@@ -3,12 +3,14 @@ import imageApi from "../../api/imageApi";
 import reviewApi from "../../api/reviewApi";
 
 import { useEffect, useState } from "react";
+import { fetchMyCustomerId } from "../../utils/customerUtil";
 import {
   ChevronLeft,
   ChevronRight,
   X,
   ShoppingCart,
   Heart,
+  Send,
 } from "lucide-react";
 
 function DetailItemModal({ item, onClose, onAdd }) {
@@ -17,6 +19,25 @@ function DetailItemModal({ item, onClose, onAdd }) {
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [reviews, setReviews] = useState([]);
+  const [customerId, setCustomerId] = useState(null);
+  const [reviewMessage, setReviewMessage] = useState("");
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+
+  useEffect(() => {
+    const fetchCustomerId = async () => {
+      try {
+        const id = await fetchMyCustomerId();
+        setCustomerId(id);
+      } catch (error) {
+        console.error("Không lấy được customerId", error);
+      }
+    };
+
+    fetchCustomerId();
+  }, []);
+
   useEffect(() => {
     const fetchImages = async () => {
       try {
@@ -24,7 +45,6 @@ function DetailItemModal({ item, onClose, onAdd }) {
         setImages(response.result);
 
         const reviewResponse = await reviewApi.getByItemId(item.itemId);
-        console.log(reviewResponse.result);
         setReviews(reviewResponse.result);
       } catch (error) {
         console.error("Error fetching images:", error);
@@ -46,6 +66,47 @@ function DetailItemModal({ item, onClose, onAdd }) {
   const handleAddToCart = async () => {
     setIsAdding(true);
     setTimeout(() => setIsAdding(false), 600);
+  };
+
+  const handleSubmitReview = async () => {
+    if (!reviewMessage.trim()) {
+      setSubmitError("Vui lòng nhập nội dung đánh giá");
+      return;
+    }
+
+    if (!customerId) {
+      setSubmitError("Vui lòng đăng nhập để đánh giá");
+      return;
+    }
+
+    setIsSubmittingReview(true);
+    setSubmitError("");
+    setSubmitSuccess(false);
+
+    try {
+      const response = await reviewApi.makeReview(customerId, {
+        itemId: item.itemId,
+        message: reviewMessage.trim(),
+      });
+
+      setReviewMessage("");
+      setSubmitSuccess(true);
+
+      // Reload reviews
+      const reviewResponse = await reviewApi.getByItemId(item.itemId);
+      setReviews(reviewResponse.result);
+
+      // Clear success message after 3 seconds
+      setTimeout(() => setSubmitSuccess(false), 3000);
+    } catch (error) {
+      console.error("Error submitting review:", error);
+      setSubmitError(
+        error.response?.data?.message ||
+          "Không thể gửi đánh giá. Vui lòng thử lại!",
+      );
+    } finally {
+      setIsSubmittingReview(false);
+    }
   };
 
   return (
@@ -201,6 +262,83 @@ function DetailItemModal({ item, onClose, onAdd }) {
                 </p>
               </div>
             </div>
+
+            {/* Write Review Section */}
+            <div className="pt-4 sm:pt-6 border-t border-gray-100">
+              <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-4">
+                Viết đánh giá
+              </h3>
+              <div className="space-y-3">
+                <textarea
+                  value={reviewMessage}
+                  onChange={(e) => setReviewMessage(e.target.value)}
+                  placeholder="Chia sẻ trải nghiệm của bạn về sản phẩm này..."
+                  className="w-full p-3 sm:p-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-sm sm:text-base"
+                  rows="4"
+                  disabled={isSubmittingReview}
+                />
+
+                {submitError && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-xs sm:text-sm">
+                    {submitError}
+                  </div>
+                )}
+
+                {submitSuccess && (
+                  <div className="bg-green-50 border border-green-200 text-green-700 px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-xs sm:text-sm">
+                    ✓ Đánh giá của bạn đã được gửi thành công!
+                  </div>
+                )}
+
+                <button
+                  onClick={handleSubmitReview}
+                  disabled={isSubmittingReview || !reviewMessage.trim()}
+                  className={`w-full flex items-center justify-center gap-2 font-semibold py-2 sm:py-3 rounded-xl transition-all duration-200 text-white text-sm sm:text-base ${
+                    isSubmittingReview || !reviewMessage.trim()
+                      ? "bg-gray-300 cursor-not-allowed"
+                      : "bg-linear-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 hover:shadow-lg active:scale-95"
+                  }`}
+                >
+                  <Send size={18} className="sm:w-5 sm:h-5" />
+                  <span>
+                    {isSubmittingReview ? "Đang gửi..." : "Gửi đánh giá"}
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            {/* Reviews Section */}
+            {reviews.length > 0 && (
+              <div className="pt-4 sm:pt-6 border-t border-gray-100">
+                <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-4">
+                  Đánh giá ({reviews.length})
+                </h3>
+                <div className="space-y-3 sm:space-y-4">
+                  {reviews.map((review) => (
+                    <div
+                      key={review.reviewId}
+                      className="bg-linear-to-br from-gray-50 to-gray-100 p-3 sm:p-4 rounded-xl border border-gray-200 hover:shadow-md transition-shadow duration-200"
+                    >
+                      {/* Customer Name and Date */}
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="font-semibold text-gray-800 text-sm sm:text-base">
+                          {review.customer.name}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {new Date(review.createAt).toLocaleDateString(
+                            "vi-VN",
+                          )}
+                        </p>
+                      </div>
+                      {/* Review Message */}
+                      <p className="text-gray-700 text-sm sm:text-base leading-relaxed">
+                        {review.message}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
