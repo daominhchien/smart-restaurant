@@ -26,6 +26,7 @@ import com.smart_restaurant.demo.enums.OrderStatus;
 import com.smart_restaurant.demo.mapper.DetailOrderMapper;
 
 
+import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -129,75 +130,67 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public OrderResponse createOrder(OrderRequest orderRequest, JwtAuthenticationToken jwtAuthenticationToken) {
-        String username = null;
-        Customer customer = null;
+        String username = jwtAuthenticationToken.getName();
+
+        if (username == null || username.isEmpty()) {
+            System.out.println("⚠️ ERROR: Username từ JWT là null hoặc rỗng!");
+            throw new AppException(ErrorCode.INVALID_TOKEN_FORMAT);
+        }
+
+        // Tìm Account bằng username
+        Account account = accountRepository.findByUsername(username)
+                .orElseThrow(() -> new AppException(ErrorCode.ACCOUNT_NOT_FOUND));
+
         String customerName = null;
-        boolean isHaveName = true; // Mặc định: không đăng nhập
+        Customer customer = null;
+        boolean isHaveName = false;
 
-        // Check đăng nhập
-        if (jwtAuthenticationToken != null) {
-            try {
-                isHaveName = false;
-                username = jwtAuthenticationToken.getName();
-
-                if (username == null || username.isEmpty()) {
-                    System.out.println("⚠️ ERROR: Username từ JWT là null hoặc rỗng!");
-                    throw new AppException(ErrorCode.INVALID_TOKEN_FORMAT);
-                }
-
-                // Tìm Account bằng username
-                Account account = accountRepository.findByUsername(username)
-                        .orElseThrow(() -> {
-                            return new AppException(ErrorCode.ACCOUNT_NOT_FOUND);
-                        });
-
-
-                // Tìm Customer bằng Account ID
-                customer = customerRepository.findByAccountAccountId(account.getAccountId())
-                        .orElseThrow(() -> {
-                            return new AppException(ErrorCode.ACCOUNT_NOT_FOUND);
-                        });
-
-                // Lấy tên từ Customer
-                customerName = customer.getName();
-                System.out.println("✅ CustomerId: " + customer.getCustomerId());
-                System.out.println("✅ CustomerName từ DB: " + customerName);
-
-            } catch (AppException e) {
-                System.out.println("❌ Lỗi khi lấy thông tin customer: " + e.getMessage());
-                throw e;
-            }
-        } else {
+        // ===== KIỂM TRA NẾU LÀ ACCOUNT MÃNG LAI =====
+        if (username.contains("guest_tenant")) {
+            System.out.println("🏪 Account mãng lai - Lấy customerName từ request");
 
             customerName = orderRequest.getCustomerName();
-            Optional<Customer> existingCustomer = customerRepository.findByPhone(orderRequest.getPhone());
+            isHaveName = true;
 
+            // Kiểm tra phone tồn tại
+            Optional<Customer> existingCustomer = customerRepository.findByPhone(orderRequest.getPhone());
             if (existingCustomer.isPresent()) {
                 throw new AppException(ErrorCode.PHONE_EXISTED);
             }
 
-            String phone = orderRequest.getPhone();
-            String address = null;
-            Genders gender = null;
-            Account account = null;
-
-            Customer customer_not_log_in = Customer.builder()
+            // Tạo customer mới cho account mãng lai
+            customer = Customer.builder()
                     .name(customerName)
-                    .phone(phone)
-                    .address(address)
-                    .gender(gender)
+                    .phone(orderRequest.getPhone())
+                    .address(null)
+                    .gender(null)
                     .account(null)
                     .build();
 
-            customer = customerRepository.save(customer_not_log_in);
+            customer = customerRepository.save(customer);
+            System.out.println("✅ Tạo khách hàng mới - CustomerName: " + customerName);
 
-            System.out.println("⏸️ Không đăng nhập - CustomerName từ request: " + customerName);
+        } else {
+            // ===== ACCOUNT THỰC TẾ =====
+            System.out.println("👤 Account thực - Lấy customerName từ DB");
+
+            isHaveName = false;
+
+            // Tìm Customer bằng Account ID
+            customer = customerRepository.findByAccountAccountId(account.getAccountId())
+                    .orElseThrow(() -> new AppException(ErrorCode.ACCOUNT_NOT_FOUND));
+
+            // Lấy tên từ Customer
+            customerName = customer.getName();
+
+            System.out.println("✅ CustomerId: " + customer.getCustomerId());
+            System.out.println("✅ CustomerName từ DB: " + customerName);
         }
+
 
         // Lấy bàn
         RestaurantTable restaurantTable = tableRepository.findById(orderRequest.getTableId())
                 .orElseThrow(() -> new AppException(ErrorCode.TABLE_NOT_FOUND));
-
 
 
         boolean exists = orderRepository.existsByTable_TableIdAndStatus_OrderStatusNotIn(
@@ -297,6 +290,7 @@ public class OrderServiceImpl implements OrderService {
         response.setSubtotal(subTotal);
         response.setOderStatus(savedOrder.getStatus().getOrderStatus());
         response.setCustomerName(savedOrder.getCustomerName());
+        response.setCustomerId(savedOrder.getCustomer().getCustomerId());
         response.setTableId(savedOrder.getTable().getTableId());
         response.setDetailOrders(toDetailOrderResponses(detailOrders));
 
@@ -493,6 +487,16 @@ public class OrderServiceImpl implements OrderService {
             }
         }
 
+        // Nếu status là Rejected thì chuyển statusTable về unoccupied
+        if (OrderStatus.Rejected.equals(updateOrderStatusRequest.getStatus())) {
+            RestaurantTable table = order.getTable();
+            if (table != null) {
+                table.setStatusTable(StatusTable.unoccupied);
+                tableRepository.save(table);
+                System.out.println("🔄 Bàn " + table.getTableId() + " chuyển về unoccupied");
+            }
+        }
+
 
         // Save
         Order updatedOrder = orderRepository.save(order);
@@ -559,21 +563,38 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     @Override
     public OrderResponse updateOrderAddItems(Integer orderId, List<UpdateDetailOrderRequest> detailOrderRequests, JwtAuthenticationToken jwtAuthenticationToken) {
-        // 1. Lấy Customer từ JWT
-        String username = null;
+        // 1. Lấy username từ JWT
+        String username = jwtAuthenticationToken.getName();
+
+        if (username == null || username.isEmpty()) {
+            throw new AppException(ErrorCode.INVALID_TOKEN_FORMAT);
+        }
+
+        // 2. Tìm Account bằng username
+        Account account = accountRepository.findByUsername(username)
+                .orElseThrow(() -> new AppException(ErrorCode.ACCOUNT_NOT_FOUND));
+
+        String customerName = null;
         Customer customer = null;
+        boolean isHaveName = false;
 
-        if (jwtAuthenticationToken != null) {
-            username = jwtAuthenticationToken.getName();
-            if (username == null || username.isEmpty()) {
-                throw new AppException(ErrorCode.INVALID_TOKEN_FORMAT);
-            }
+        // ===== KIỂM TRA NẾU LÀ ACCOUNT MÃNG LAI =====
+        if (username.contains("guest_tenant")) {
+            System.out.println("🏪 Account mãng lai");
+            // Không cần validate customer cho account mãng lai
+            isHaveName = true;
 
-            Account account = accountRepository.findByUsername(username)
-                    .orElseThrow(() -> new AppException(ErrorCode.ACCOUNT_NOT_FOUND));
+        } else {
+            // ===== ACCOUNT THỰC TẾ =====
+            System.out.println("👤 Account thực");
 
+            // Tìm Customer bằng Account ID
             customer = customerRepository.findByAccountAccountId(account.getAccountId())
                     .orElseThrow(() -> new AppException(ErrorCode.ACCOUNT_NOT_FOUND));
+
+            customerName = customer.getName();
+            isHaveName = false;
+            System.out.println("✅ CustomerId: " + customer.getCustomerId());
         }
 
         // 2. Kiểm tra order tồn tại
@@ -585,11 +606,10 @@ public class OrderServiceImpl implements OrderService {
             throw new AppException(ErrorCode.UNAUTHORIZED_ORDER_ACCESS);
         }
 
-        // 4. Validate: Order KHÔNG được ở trạng thái Pending_payment, Paid, Pending_approval
+        // 4. Validate: Order KHÔNG được ở trạng thái Pending_payment, Paid
         OrderStatus currentStatus = order.getStatus().getOrderStatus();
         if (OrderStatus.Pending_payment.equals(currentStatus) ||
-                OrderStatus.Paid.equals(currentStatus) ||
-                OrderStatus.Pending_approval.equals(currentStatus)) {
+                OrderStatus.Paid.equals(currentStatus)) {
             throw new AppException(ErrorCode.INVALID_ORDER_STATUS);
         }
 
@@ -720,6 +740,10 @@ public class OrderServiceImpl implements OrderService {
     private OrderResponse toFullOrderResponse(Order order) {
         OrderResponse response = orderMapper.toOrderResponse(order);
         response.setCustomerName(order.getCustomerName());
+        // ✅ Set customerId
+        if (order.getCustomer() != null) {
+            response.setCustomerId(order.getCustomer().getCustomerId());
+        }
 
         // Set tableId (vì mapper cơ bản có thể không map trường này)
         if (order.getTable() != null) {
@@ -776,6 +800,7 @@ public class OrderServiceImpl implements OrderService {
                                     m.getModifierOptionId(),
                                     m.getName(),
                                     m.getPrice(),
+                                    m.getIsActive(),
                                     m.getModifierGroup().getModifierGroupId(),
                                     m.getModifierGroup().getName()
                             ))

@@ -8,6 +8,8 @@ import com.smart_restaurant.demo.dto.Request.UpdateOrderStatusRequest;
 import com.smart_restaurant.demo.dto.Response.ApiResponse;
 import com.smart_restaurant.demo.dto.Response.InvoiceResponse;
 import com.smart_restaurant.demo.dto.Response.OrderResponse;
+import com.smart_restaurant.demo.exception.AppException;
+import com.smart_restaurant.demo.exception.ErrorCode;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -55,6 +57,7 @@ public class OrderController {
                         : null;
 
         System.out.println("🔍 JWT Token: " + (jwtToken != null ? "Có" : "Null"));
+
 
         // jwtToken sẽ tự động null nếu chưa đăng nhập
         OrderResponse orderResponse = orderService.createOrder(orderRequest, jwtToken);

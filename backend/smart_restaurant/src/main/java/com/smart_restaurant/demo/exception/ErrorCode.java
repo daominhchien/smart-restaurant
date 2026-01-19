@@ -62,7 +62,7 @@ public enum ErrorCode {
     REQUIRED_MODIFIER_GROUP_NOT_SELECTED("1043", "Người dùng chưa chọn nhóm modifier bắt buộc", HttpStatus.BAD_REQUEST),
     MODIFIER_GROUP_ONLY_SINGLE_SELECTION("1044", "Người dùng đã chọn quá nhiều tùy chọn trong một nhóm mà chỉ được chọn 1", HttpStatus.BAD_REQUEST),
     UNAUTHORIZED_ORDER_ACCESS("1045", "Order không thuọc quyền của bạn", HttpStatus.BAD_REQUEST),
-    INVALID_ORDER_STATUS("1046", "OrderStatus không phai là Pendding_payment, Order phải ở trạng thái chưa thanh toán mới có quyền thêm", HttpStatus.BAD_REQUEST),
+    INVALID_ORDER_STATUS("1046", "OrderStatus không phai là Pendding_payment/Paid, Order phải ở trạng thái chưa thanh toán mới có quyền thêm", HttpStatus.BAD_REQUEST),
     TABLE_NOT_AVAILABLE("1047",  "Table đã ngừng hoat dong", HttpStatus.BAD_REQUEST),
     INVALID_QUANTITY("1048", "Quatity phải > 0", HttpStatus.BAD_REQUEST),
     CANNOT_DECREASE_QUANTITY("4001", "Không thể giảm số lượng. Chỉ có thể thêm hoặc tăng quantity.", HttpStatus.BAD_REQUEST),
@@ -82,7 +82,11 @@ public enum ErrorCode {
     PAYMENT_NOT_FOUND_FOR_ORDER("1055", "Payment not found for order", HttpStatus.BAD_REQUEST),
     PAYMENT_NOT_FOUND_WITH_REQUEST_ID("1056", "Payment not found with requestId", HttpStatus.BAD_REQUEST),
     DETAIL_ORDER_NOT_FOUND("1057", "DETAIL_ORDER_NOT_FOUND", HttpStatus.BAD_REQUEST),
-    DETAIL_ORDER_ALREADY_APPROVED("1058", "DETAIL_ORDER_ALREADY_APPROVED", HttpStatus.BAD_REQUEST);
+    DETAIL_ORDER_ALREADY_APPROVED("1058", "DETAIL_ORDER_ALREADY_APPROVED", HttpStatus.BAD_REQUEST),
+    MODIFIER_OPTION_NOT_FOUND("1060", "MODIFIER_OPTION_NOT_FOUND", HttpStatus.BAD_REQUEST),
+    CUSTOMER_NAME_REQUIRED("1061", "CUSTOMER_NAME_REQUIRED)", HttpStatus.BAD_REQUEST),
+    PHONE_REQUIRED("1062", "PHONE_REQUIRED", HttpStatus.BAD_REQUEST),
+    NO_DETAIL_ORDER_FOUND("1063", "NO_DETAIL_ORDER_FOUND", HttpStatus.BAD_REQUEST);
 
     ErrorCode(String code, String message, HttpStatus httpStatusCode) {
         this.code = code;

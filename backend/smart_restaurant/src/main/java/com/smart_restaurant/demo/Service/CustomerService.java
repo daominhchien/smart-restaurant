@@ -8,4 +8,7 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 public interface CustomerService {
     CustomerResponseDto createCustomer(CustomerRequest customerRequest, JwtAuthenticationToken jwtAuthenticationToken);
     CustomerResponseDto getProfile(JwtAuthenticationToken jwtAuthenticationToken);
+
+
+    CustomerResponseDto getMyProfile( JwtAuthenticationToken jwtAuthenticationToken);
 }
