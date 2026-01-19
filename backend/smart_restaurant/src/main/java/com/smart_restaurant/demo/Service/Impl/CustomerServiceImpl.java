@@ -37,6 +37,12 @@ public class CustomerServiceImpl implements CustomerService {
     }
 
     @Override
+    public CustomerResponseDto getProfile(JwtAuthenticationToken jwtAuthenticationToken) {
+        Account account=accountRepository.findByUsername(jwtAuthenticationToken.getName()).orElseThrow(()-> new AppException(ErrorCode.ACCOUNT_NOT_EXITS));
+        Customer customer=customerRepository.findByAccount_Username(jwtAuthenticationToken.getName()).orElseThrow(()-> new AppException(ErrorCode.CUSTOMER_NOT_FOUND));
+        if(!account.getIsCustomer())
+            throw new AppException(ErrorCode.CUSTOMER_NOT_FOUND);
+
     public CustomerResponseDto getMyProfile(JwtAuthenticationToken jwtAuthenticationToken) {
         String username = jwtAuthenticationToken.getName();
         // lay account tu username

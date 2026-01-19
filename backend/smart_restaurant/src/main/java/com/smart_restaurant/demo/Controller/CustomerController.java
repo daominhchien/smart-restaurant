@@ -22,6 +22,12 @@ public class CustomerController {
                 .result(customerService.createCustomer(customerRequest,jwtAuthenticationToken))
                 .build();
     }
+    @GetMapping
+    public  ApiResponse<CustomerResponseDto> getProfile(JwtAuthenticationToken jwtAuthenticationToken){
+        return  ApiResponse.<CustomerResponseDto>builder()
+                .result(customerService.getProfile(jwtAuthenticationToken))
+                .build();
+    }
 
     @GetMapping("/me")
     public ApiResponse<CustomerResponseDto> getMyProfile( JwtAuthenticationToken jwtAuthenticationToken){
