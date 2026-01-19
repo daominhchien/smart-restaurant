@@ -129,75 +129,66 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public OrderResponse createOrder(OrderRequest orderRequest, JwtAuthenticationToken jwtAuthenticationToken) {
-        String username = null;
-        Customer customer = null;
+        String username = jwtAuthenticationToken.getName();
+
+        if (username == null || username.isEmpty()) {
+            System.out.println("⚠️ ERROR: Username từ JWT là null hoặc rỗng!");
+            throw new AppException(ErrorCode.INVALID_TOKEN_FORMAT);
+        }
+
+        // Tìm Account bằng username
+        Account account = accountRepository.findByUsername(username)
+                .orElseThrow(() -> new AppException(ErrorCode.ACCOUNT_NOT_FOUND));
+
         String customerName = null;
-        boolean isHaveName = true; // Mặc định: không đăng nhập
+        Customer customer = null;
+        boolean isHaveName = false;
 
-        // Check đăng nhập
-        if (jwtAuthenticationToken != null) {
-            try {
-                isHaveName = false;
-                username = jwtAuthenticationToken.getName();
-
-                if (username == null || username.isEmpty()) {
-                    System.out.println("⚠️ ERROR: Username từ JWT là null hoặc rỗng!");
-                    throw new AppException(ErrorCode.INVALID_TOKEN_FORMAT);
-                }
-
-                // Tìm Account bằng username
-                Account account = accountRepository.findByUsername(username)
-                        .orElseThrow(() -> {
-                            return new AppException(ErrorCode.ACCOUNT_NOT_FOUND);
-                        });
-
-
-                // Tìm Customer bằng Account ID
-                customer = customerRepository.findByAccountAccountId(account.getAccountId())
-                        .orElseThrow(() -> {
-                            return new AppException(ErrorCode.ACCOUNT_NOT_FOUND);
-                        });
-
-                // Lấy tên từ Customer
-                customerName = customer.getName();
-                System.out.println("✅ CustomerId: " + customer.getCustomerId());
-                System.out.println("✅ CustomerName từ DB: " + customerName);
-
-            } catch (AppException e) {
-                System.out.println("❌ Lỗi khi lấy thông tin customer: " + e.getMessage());
-                throw e;
-            }
-        } else {
+        // ===== KIỂM TRA NẾU LÀ ACCOUNT MÃNG LAI =====
+        if (username.contains("guest_tenant")) {
+            System.out.println("🏪 Account mãng lai - Lấy customerName từ request");
 
             customerName = orderRequest.getCustomerName();
-            Optional<Customer> existingCustomer = customerRepository.findByPhone(orderRequest.getPhone());
+            isHaveName = true;
 
+            // Kiểm tra phone tồn tại
+            Optional<Customer> existingCustomer = customerRepository.findByPhone(orderRequest.getPhone());
             if (existingCustomer.isPresent()) {
                 throw new AppException(ErrorCode.PHONE_EXISTED);
             }
 
-            String phone = orderRequest.getPhone();
-            String address = null;
-            Genders gender = null;
-            Account account = null;
-
-            Customer customer_not_log_in = Customer.builder()
+            // Tạo customer mới cho account mãng lai
+            customer = Customer.builder()
                     .name(customerName)
-                    .phone(phone)
-                    .address(address)
-                    .gender(gender)
+                    .phone(orderRequest.getPhone())
+                    .address(null)
+                    .gender(null)
                     .account(null)
                     .build();
 
-            customer = customerRepository.save(customer_not_log_in);
+            customer = customerRepository.save(customer);
+            System.out.println("✅ Tạo khách hàng mới - CustomerName: " + customerName);
 
-            System.out.println("⏸️ Không đăng nhập - CustomerName từ request: " + customerName);
+        } else {
+            // ===== ACCOUNT THỰC TẾ =====
+            System.out.println("👤 Account thực - Lấy customerName từ DB");
+
+            isHaveName = false;
+
+            // Tìm Customer bằng Account ID
+            customer = customerRepository.findByAccountAccountId(account.getAccountId())
+                    .orElseThrow(() -> new AppException(ErrorCode.ACCOUNT_NOT_FOUND));
+
+            // Lấy tên từ Customer
+            customerName = customer.getName();
+            System.out.println("✅ CustomerId: " + customer.getCustomerId());
+            System.out.println("✅ CustomerName từ DB: " + customerName);
         }
+
 
         // Lấy bàn
         RestaurantTable restaurantTable = tableRepository.findById(orderRequest.getTableId())
                 .orElseThrow(() -> new AppException(ErrorCode.TABLE_NOT_FOUND));
-
 
 
         boolean exists = orderRepository.existsByTable_TableIdAndStatus_OrderStatusNotIn(
