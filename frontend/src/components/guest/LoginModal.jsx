@@ -1,6 +1,3 @@
-// ============================================
-// LoginModal.jsx
-// ============================================
 import { X, Mail, Lock } from "lucide-react";
 import { useState, useContext } from "react";
 import { AuthContext } from "../../context/AuthContext";
@@ -19,7 +16,7 @@ export default function LoginModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showCustomerInfo, setShowCustomerInfo] = useState(false);
-  const { login } = useContext(AuthContext);
+  const { login, logout } = useContext(AuthContext);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -48,21 +45,14 @@ export default function LoginModal({
         throw new Error("Đăng nhập thất bại");
       }
 
-      // 🔐 LƯU GIỐNG LOGIN PAGE
       localStorage.setItem("token", accessToken);
       sessionStorage.setItem("userName", userName);
 
-      // 🔄 CẬP NHẬT AUTH CONTEXT
       await login(accessToken);
 
-      const role = localStorage.getItem("role");
-
-      // ✅ KIỂM TRA FIRST ACTIVITY
       if (firstActivity) {
-        // Hiển thị modal nhập thông tin khách hàng
         setShowCustomerInfo(true);
       } else {
-        // Đăng nhập bình thường
         onClose();
         onSuccess?.();
       }
@@ -83,11 +73,30 @@ export default function LoginModal({
   };
 
   const handleCustomerInfoClose = () => {
-    setShowCustomerInfo(false);
-    onClose();
+    // 🔐 AUTO LOGOUT nếu user đóng modal mà chưa cập nhật thông tin
+    handleAutoLogout();
   };
 
-  // Nếu đang hiển thị modal nhập thông tin khách hàng
+  const handleAutoLogout = async () => {
+    try {
+      // Gọi API logout
+      await authApi.logout();
+    } catch (err) {
+      console.error("Logout error:", err);
+    } finally {
+      // Xóa dữ liệu lưu trữ
+      localStorage.removeItem("token");
+      sessionStorage.removeItem("userName");
+
+      // Cập nhật AuthContext
+      logout();
+
+      // Đóng modal
+      setShowCustomerInfo(false);
+      onClose();
+    }
+  };
+
   if (showCustomerInfo) {
     return (
       <CustomerInfoModal
@@ -99,9 +108,7 @@ export default function LoginModal({
 
   return (
     <Overlay>
-      {/* MODAL */}
       <div className="p-6 w-[92%] max-w-md bg-white rounded-3xl shadow-xl animate-scaleIn sm:p-8">
-        {/* HEADER */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-semibold text-gray-800 sm:text-xl">
             Đăng nhập
@@ -114,16 +121,13 @@ export default function LoginModal({
           </button>
         </div>
 
-        {/* ERROR */}
         {error && (
           <div className="mb-4 px-4 py-3 text-red-600 text-sm bg-red-50 rounded-xl">
             {error}
           </div>
         )}
 
-        {/* FORM */}
         <div className="space-y-4">
-          {/* EMAIL */}
           <div className="relative">
             <Mail
               size={18}
@@ -138,7 +142,6 @@ export default function LoginModal({
             />
           </div>
 
-          {/* PASSWORD */}
           <div className="relative">
             <Lock
               size={18}
@@ -153,7 +156,6 @@ export default function LoginModal({
             />
           </div>
 
-          {/* SUBMIT */}
           <button
             onClick={handleSubmit}
             disabled={loading}
@@ -163,7 +165,6 @@ export default function LoginModal({
           </button>
         </div>
 
-        {/* FOOTER */}
         <div className="mt-6 text-center text-sm text-gray-500">
           Chưa có tài khoản?{" "}
           <button
