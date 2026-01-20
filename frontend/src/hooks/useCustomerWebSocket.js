@@ -9,7 +9,9 @@ export default function useCustomerWebSocket({ onCustomerUpdate, serverPort }) {
   const [newOrderIds, setNewOrderIds] = useState(new Set());
 
   useEffect(() => {
-    const socket = new SockJS(`http://localhost:${serverPort}/ws`);
+    const socket = new SockJS(
+      `http://${import.meta.env.VITE_SERVER_DOMAIN}:${serverPort}/ws`,
+    );
 
     const stompClient = new Client({
       webSocketFactory: () => socket,
