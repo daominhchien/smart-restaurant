@@ -58,7 +58,7 @@ cloudinary:
   api-key: ${CLOUDINARY_API_KEY}
   api-secret: ${CLOUDINARY_API_SECRET}
 qr:
-  base-url: http://${LOCAL_IP}:${PORT}/api/qr/verify?t=
+  base-url: ${LOCAL_IP}/api/qr/verify?t=
   width: 300
   height: 300
   FE_URL: ${FE_URL}
@@ -74,5 +74,6 @@ momo:
   secret-key-momo: ${SECRET_KEY_MOMO}
 google:
   client-id: 315292685589-c003buqq43ad0a35laoq80kelu45i6bf.apps.googleusercontent.com
+
 
 
