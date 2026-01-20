@@ -241,8 +241,14 @@ function DetailItemOverlay({ item, onClose, onUpdate }) {
                 <p className="text-gray-600 text-sm sm:text-base leading-relaxed">
                   {item.description}
                 </p>
-                <div className="text-2xl font-bold text-blue-600">
-                  {item.price?.toLocaleString()} ₫
+                <div className="flex flex-col">
+                  <div className="text-2xl font-bold text-blue-600">
+                    {item.price?.toLocaleString()} ₫
+                  </div>
+                  {/* Số lượng đã bán */}
+                  <p className="text-sm  text-gray-500">
+                    Đã bán: {item.quantitySold || 0}
+                  </p>
                 </div>
               </div>
 
