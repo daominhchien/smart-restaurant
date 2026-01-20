@@ -7,6 +7,7 @@ import TableManagement from "../../pages/admin/TableManagement";
 import RegisterInforTenant from "../../pages/admin/RegisterInforTenant";
 import MenuManagement from "../../pages/admin/MenuManagement";
 import StaffManagement from "../../pages/admin/StaffManagement";
+import Report from "../../pages/admin/Report";
 
 export default function TenantAdminRoutes() {
   return (
@@ -23,6 +24,7 @@ export default function TenantAdminRoutes() {
       <Route path="tenant-create" element={<RegisterInforTenant />} />
       <Route path="menu-management" element={<MenuManagement />} />
       <Route path="staff-management" element={<StaffManagement />} />
+      <Route path="revenue" element={<Report />} />
     </Route>
   );
 }

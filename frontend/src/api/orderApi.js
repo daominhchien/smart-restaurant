@@ -9,6 +9,10 @@ const orderApi = {
   customerUpdate: (orderId, data) =>
     axiosClient.put(`/orders/${orderId}`, data),
   createInvoice: (orderId) => axiosClient.post(`orders/${orderId}`),
+  updatePaymentType: (orderId, data) =>
+    axiosClient.put(`/orders/payment-type/${orderId}`, data),
+  downloadInvoice: (orderId) =>
+    axiosClient.get(`/orders/${orderId}/invoice/pdf`, { responseType: "blob" }),
 };
 
 export default orderApi;
