@@ -85,7 +85,7 @@ function Dashboard() {
   const [tenant, setTenant] = useState(null);
   const [userName, setUserName] = useState("");
   const [tableNameMap, setTableNameMap] = useState({});
-
+  const navigate = useNavigate();
   /* ===== USER ===== */
   useEffect(() => {
     const storedUserName = localStorage.getItem("userName");
