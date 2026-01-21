@@ -43,7 +43,7 @@ export default function LoginModal({
     if (window.google) {
       window.google.accounts.id.initialize({
         client_id:
-          "315292685589-c003buqq43ad0a35laoq80kelu45i6bf.apps.googleusercontent.com",
+          "955403983411-1bp707jbei53tthatuk0863enivvu5f3.apps.googleusercontent.com",
         callback: handleGoogleCredentialResponse,
       });
 
