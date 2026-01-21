@@ -282,7 +282,6 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             GoogleIdTokenVerifier verifier =
                     new GoogleIdTokenVerifier.Builder(transport, jsonFactory)
                             .setAudience(Collections.singletonList(googleClientId))
-                            .setAcceptableTimeSkewSeconds(30000)
                             .build();
 
             GoogleIdToken idToken = verifier.verify(token);
@@ -345,6 +344,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         return  accountRepository.save(account);
     }
 }
+
 
 
 
